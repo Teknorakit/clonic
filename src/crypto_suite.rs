@@ -13,22 +13,22 @@
 //!
 //! | ID | Name | KE | Sig | Symmetric | Target |
 //! |----|------|----|-----|-----------|--------|
-//! | 0x01 | PQ Hybrid | ML-KEM-768 + X25519 | ML-DSA-65 + Ed25519 | AES-256-GCM | ZluidrOS |
-//! | 0x02 | Classical | X25519 | Ed25519 | AES-256-GCM | ZluidrEdge SDK |
+//! | 0x01 | PQ Hybrid | ML-KEM-768 + X25519 | ML-DSA-65 + Ed25519 | AES-256-GCM | Full ZCP nodes |
+//! | 0x02 | Classical | X25519 | Ed25519 | AES-256-GCM | Constrained edge devices |
 //!
 //! ## Negotiation
 //!
 //! Suite negotiation happens at the session layer (above `clonic`).
-//! A ZluidrOS node receiving a `Classical` envelope from an ESP32 knows
-//! to use X25519-only decryption. A ZluidrEdge device receiving a
+//! A full node receiving a `Classical` envelope from an ESP32 knows
+//! to use X25519-only decryption. A constrained device receiving a
 //! `PqHybrid` envelope it cannot decrypt should respond with an error
 //! carrying its own supported suite list.
 
 /// Cryptographic suite identifier carried in the ZCP envelope header.
 ///
 /// This tells the receiver how to interpret the encrypted payload and MAC.
-/// The actual crypto operations are performed by the consuming crate
-/// (ZluidrOS or ZluidrEdge SDK), not by `clonic`.
+/// The actual crypto operations are performed by the consuming
+/// implementation, not by `clonic`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[repr(u8)]
@@ -36,14 +36,14 @@ pub enum CryptoSuite {
     /// Post-quantum hybrid: ML-KEM-768 + X25519 key exchange,
     /// ML-DSA-65 + Ed25519 signatures, AES-256-GCM symmetric.
     ///
-    /// Used by ZluidrOS (full) on Linux devices with ≥1 GB RAM.
+    /// Used on Linux devices with >= 1 GB RAM.
     /// Provides defense against both classical and quantum-era attacks.
     PqHybrid = 0x01,
 
     /// Classical-only: X25519 key exchange, Ed25519 signatures,
     /// AES-256-GCM symmetric.
     ///
-    /// Used by ZluidrEdge SDK on constrained devices (ESP32, STM32, nRF52).
+    /// Used on constrained devices (ESP32, STM32, nRF52).
     /// ML-KEM/ML-DSA are too expensive for sub-MHz microcontrollers.
     Classical = 0x02,
 }

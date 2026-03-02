@@ -1,4 +1,4 @@
-//! Data residency zone tags (ADR-004, ADR-010).
+//! Data residency zone tags.
 //!
 //! Every ZCP message carries a 2-byte residency tag that declares where
 //! the payload data is allowed to exist. The ZCP routing layer (above
@@ -12,16 +12,16 @@
 //!
 //! ```text
 //! Bit 15 (high bit): Extension flag
-//!   0 = country-level zone (ISO 3166-1 numeric in bits 0–14)
+//!   0 = country-level zone (ISO 3166-1 numeric in bits 0-14)
 //!   1 = extended format follows (ISO 3166-2 subdivision, reserved)
 //!
-//! Bits 0–14: ISO 3166-1 numeric country code (0–999)
+//! Bits 0-14: ISO 3166-1 numeric country code (0-999)
 //! ```
 //!
 //! Special values:
 //! - `0x0000` = `Global` — no residency restriction
 //! - `0x0168` (360) = Indonesia
-//! - `0x8000` bit set = extended (future province-level, per ADR-010)
+//! - `0x8000` bit set = extended (future province-level)
 
 /// A 2-byte data residency zone tag.
 ///
@@ -58,7 +58,7 @@ impl ResidencyTag {
     ///
     /// Returns `None` if the code exceeds 14 bits (> 16383), which would
     /// collide with the extension flag. In practice, ISO 3166-1 numeric
-    /// codes are 0–999, so this is generous.
+    /// codes are 0-999, so this is generous.
     pub const fn from_country_code(code: u16) -> Option<ResidencyTag> {
         if code & Self::EXTENSION_BIT != 0 {
             None // Would collide with extension flag
@@ -85,12 +85,12 @@ impl ResidencyTag {
     /// Whether the extension flag (bit 15) is set.
     ///
     /// When set, the tag encodes a sub-national zone (ISO 3166-2).
-    /// This is reserved for future use per ADR-010.
+    /// This is reserved for future use.
     pub const fn is_extended(self) -> bool {
         self.0 & Self::EXTENSION_BIT != 0
     }
 
-    /// Extract the country code (bits 0–14), ignoring the extension flag.
+    /// Extract the country code (bits 0-14), ignoring the extension flag.
     pub const fn country_code(self) -> u16 {
         self.0 & !Self::EXTENSION_BIT
     }
@@ -146,7 +146,6 @@ impl core::fmt::Display for ResidencyTag {
         } else if self.is_extended() {
             write!(f, "EXT:{}", self.country_code())
         } else {
-            // ISO 3166-1 numeric codes are zero-padded to 3 digits
             write!(f, "{:03}", self.raw())
         }
     }

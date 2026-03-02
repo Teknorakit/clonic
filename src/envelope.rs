@@ -6,7 +6,7 @@
 //!   with no allocator. This is what constrained devices (ESP32) use.
 //!
 //! - [`Envelope`] — owned, heap-allocated envelope. Requires the `alloc`
-//!   feature. This is what ZluidrOS uses for building outbound messages.
+//!   feature. Used for building outbound messages.
 //!
 //! Both share the same 42-byte header layout.
 
@@ -46,7 +46,7 @@ const OFF_PAYLOAD_LEN: usize = 38;
 
 /// Bit flags in the envelope header.
 ///
-/// Bits 0–1 are defined; bits 2–7 are reserved and **must be zero**
+/// Bits 0-1 are defined; bits 2-7 are reserved and **must be zero**
 /// in v0x01 envelopes. Receivers should ignore unknown flags from
 /// higher protocol versions (forward compatibility).
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Default)]
@@ -89,7 +89,7 @@ impl Flags {
         Flags(self.0 & !flag)
     }
 
-    /// Whether any reserved bits (2–7) are set.
+    /// Whether any reserved bits (2-7) are set.
     /// V1 receivers should warn on this but not reject.
     pub const fn has_unknown_bits(self) -> bool {
         self.0 & 0b1111_1100 != 0
@@ -144,7 +144,6 @@ impl<'a> EnvelopeRef<'a> {
 
         // Message type — lenient: accept if in a known range
         if MsgType::from_byte(buf[OFF_MSG_TYPE]).is_none() {
-            // Check if it's at least in a known range (relay-friendly)
             let range = MsgType::range_of(buf[OFF_MSG_TYPE]);
             if matches!(range, crate::msg_type::MsgRange::Unknown) {
                 return Err(Error::UnknownMsgType(buf[OFF_MSG_TYPE]));
@@ -207,7 +206,6 @@ impl<'a> EnvelopeRef<'a> {
 
     /// Protocol version.
     pub fn version(&self) -> Version {
-        // Already validated in parse()
         Version::from_byte(self.buf[OFF_VERSION]).unwrap()
     }
 
@@ -293,11 +291,8 @@ impl<'a> core::fmt::Debug for EnvelopeRef<'a> {
 
 /// Owned ZCP envelope with heap-allocated payload.
 ///
-/// Used by ZluidrOS for constructing outbound envelopes. Provides a
-/// builder-style API for setting header fields and attaching a payload.
-///
-/// To convert to wire bytes, use [`crate::encode::encode`] or the
-/// [`Envelope::to_bytes`] convenience method.
+/// Provides a builder-style API for setting header fields and attaching
+/// a payload. To convert to wire bytes, use [`Envelope::to_bytes`].
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 #[derive(Debug, Clone, PartialEq, Eq)]

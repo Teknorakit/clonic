@@ -36,7 +36,7 @@ The Zone Coordination Protocol (ZCP) closes this gap. It is the first wire proto
 
 ZCP is designed for distributed device coordination in environments where connectivity is intermittent, hardware is constrained, data sovereignty is regulated, and multiple transports (WiFi, BLE, LoRa, 4G) coexist. It provides CRDT-based offline-first synchronization, intent-based task routing, fleet device orchestration, and post-quantum cryptographic protection — all within a 42-byte envelope overhead that fits comfortably on microcontrollers with 256 KB of RAM.
 
-The protocol is open, transport-agnostic, and published under the MIT license. The reference codec crate is called [`clonic`](https://github.com/Teknorakit/clonic). ZCP is not tied to any operating system, cloud provider, or hardware platform.
+The protocol is open, transport-agnostic, and published under the MIT license. The reference codec crate is called [`clonic`](https://github.com/teknorakit/clonic). ZCP is not tied to any operating system, cloud provider, or hardware platform.
 
 ---
 
@@ -277,7 +277,7 @@ ZCP's 58-byte envelope is larger than MQTT's minimal header, reflecting the zone
 
 ### 10.1 Open Protocol, Open Codec
 
-ZCP is an open protocol specification. The reference codec is a Rust crate called **[clonic](https://github.com/Teknorakit/clonic)**, published under the MIT license. It supports `no_std` (bare-metal), `alloc` (embedded Linux), and `std` (servers) via feature flags.
+ZCP is an open protocol specification. The reference codec is a Rust crate called **[clonic](https://github.com/teknorakit/clonic)**, published under the MIT license. It supports `no_std` (bare-metal), `alloc` (embedded Linux), and `std` (servers) via feature flags.
 
 ### 10.2 Implementation Tiers
 

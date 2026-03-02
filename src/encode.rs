@@ -64,7 +64,7 @@ pub fn encode_to_slice(fields: &EnvelopeFields<'_>, dst: &mut [u8]) -> Result<us
         });
     }
 
-    // ── Header (42 bytes) ────────────────────────────────
+    // Header (42 bytes)
     dst[0] = fields.version.as_byte();
     dst[1] = fields.msg_type.as_byte();
     dst[2] = fields.crypto_suite.as_byte();
@@ -81,10 +81,10 @@ pub fn encode_to_slice(fields: &EnvelopeFields<'_>, dst: &mut [u8]) -> Result<us
     dst[40] = pl_bytes[2];
     dst[41] = pl_bytes[3];
 
-    // ── Payload ──────────────────────────────────────────
+    // Payload
     dst[HEADER_SIZE..HEADER_SIZE + payload_len].copy_from_slice(fields.payload);
 
-    // ── MAC ──────────────────────────────────────────────
+    // MAC
     let mac_start = HEADER_SIZE + payload_len;
     dst[mac_start..mac_start + MAC_SIZE].copy_from_slice(fields.mac);
 

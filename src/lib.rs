@@ -17,9 +17,9 @@
 //!
 //! ## Design Analogy
 //!
-//! `clonic` is to ZluidrOS what the [`http`](https://crates.io/crates/http) crate
+//! `clonic` is to ZCP what the [`http`](https://crates.io/crates/http) crate
 //! is to Hyper: it defines `Request`, `Response`, `StatusCode` — but doesn't open
-//! sockets. ZluidrOS and ZluidrEdge SDK build actual networking on top.
+//! sockets. Any ZCP implementation builds actual networking on top.
 //!
 //! ## Consumers
 //!
@@ -80,7 +80,10 @@ pub mod version;
 
 // Re-export primary types at crate root for ergonomics.
 pub use crypto_suite::CryptoSuite;
-pub use envelope::{Envelope, EnvelopeRef, Flags, HEADER_SIZE, MAC_SIZE, MIN_FRAME_SIZE};
+pub use envelope::{EnvelopeRef, Flags, HEADER_SIZE, MAC_SIZE, MIN_FRAME_SIZE};
+#[cfg(feature = "alloc")]
+#[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
+pub use envelope::Envelope;
 pub use error::Error;
 pub use msg_type::MsgType;
 pub use residency::ResidencyTag;
