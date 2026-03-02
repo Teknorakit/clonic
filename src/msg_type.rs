@@ -20,7 +20,6 @@
 #[repr(u8)]
 pub enum MsgType {
     // ── Core operations (0x01–0x0F) ──────────────────────
-
     /// Route an IntentfulTask to a target device or device group.
     TaskRoute = 0x01,
 
@@ -31,7 +30,6 @@ pub enum MsgType {
     DeviceOrch = 0x03,
 
     // ── DHT operations (0x10–0x1F) ───────────────────────
-
     /// Kademlia FIND_NODE.
     DhtFindNode = 0x10,
 
@@ -42,7 +40,6 @@ pub enum MsgType {
     DhtPutValue = 0x12,
 
     // ── Gossip operations (0x20–0x2F) ────────────────────
-
     /// GossipSub broadcast message.
     GossipBroadcast = 0x20,
 
@@ -50,7 +47,6 @@ pub enum MsgType {
     GossipSubscribe = 0x21,
 
     // ── Provisioning operations (0x30–0x3F) ──────────────
-
     /// Device provisioning request (child → parent).
     ProvisionRequest = 0x30,
 
@@ -225,16 +221,49 @@ mod tests {
 
     #[test]
     fn defined_variants_in_correct_range() {
-        assert_eq!(MsgType::range_of(MsgType::TaskRoute.as_byte()), MsgRange::Core);
-        assert_eq!(MsgType::range_of(MsgType::SyncCrdt.as_byte()), MsgRange::Core);
-        assert_eq!(MsgType::range_of(MsgType::DeviceOrch.as_byte()), MsgRange::Core);
-        assert_eq!(MsgType::range_of(MsgType::DhtFindNode.as_byte()), MsgRange::Dht);
-        assert_eq!(MsgType::range_of(MsgType::DhtGetValue.as_byte()), MsgRange::Dht);
-        assert_eq!(MsgType::range_of(MsgType::DhtPutValue.as_byte()), MsgRange::Dht);
-        assert_eq!(MsgType::range_of(MsgType::GossipBroadcast.as_byte()), MsgRange::Gossip);
-        assert_eq!(MsgType::range_of(MsgType::GossipSubscribe.as_byte()), MsgRange::Gossip);
-        assert_eq!(MsgType::range_of(MsgType::ProvisionRequest.as_byte()), MsgRange::Provisioning);
-        assert_eq!(MsgType::range_of(MsgType::ProvisionCert.as_byte()), MsgRange::Provisioning);
-        assert_eq!(MsgType::range_of(MsgType::ProvisionRevoke.as_byte()), MsgRange::Provisioning);
+        assert_eq!(
+            MsgType::range_of(MsgType::TaskRoute.as_byte()),
+            MsgRange::Core
+        );
+        assert_eq!(
+            MsgType::range_of(MsgType::SyncCrdt.as_byte()),
+            MsgRange::Core
+        );
+        assert_eq!(
+            MsgType::range_of(MsgType::DeviceOrch.as_byte()),
+            MsgRange::Core
+        );
+        assert_eq!(
+            MsgType::range_of(MsgType::DhtFindNode.as_byte()),
+            MsgRange::Dht
+        );
+        assert_eq!(
+            MsgType::range_of(MsgType::DhtGetValue.as_byte()),
+            MsgRange::Dht
+        );
+        assert_eq!(
+            MsgType::range_of(MsgType::DhtPutValue.as_byte()),
+            MsgRange::Dht
+        );
+        assert_eq!(
+            MsgType::range_of(MsgType::GossipBroadcast.as_byte()),
+            MsgRange::Gossip
+        );
+        assert_eq!(
+            MsgType::range_of(MsgType::GossipSubscribe.as_byte()),
+            MsgRange::Gossip
+        );
+        assert_eq!(
+            MsgType::range_of(MsgType::ProvisionRequest.as_byte()),
+            MsgRange::Provisioning
+        );
+        assert_eq!(
+            MsgType::range_of(MsgType::ProvisionCert.as_byte()),
+            MsgRange::Provisioning
+        );
+        assert_eq!(
+            MsgType::range_of(MsgType::ProvisionRevoke.as_byte()),
+            MsgRange::Provisioning
+        );
     }
 }

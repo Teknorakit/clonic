@@ -360,7 +360,9 @@ impl Envelope {
         let r = EnvelopeRef::parse(buf)?;
         Ok(Envelope {
             version: r.version(),
-            msg_type: r.msg_type().ok_or(Error::UnknownMsgType(r.msg_type_raw()))?,
+            msg_type: r
+                .msg_type()
+                .ok_or(Error::UnknownMsgType(r.msg_type_raw()))?,
             crypto_suite: r.crypto_suite(),
             flags: r.flags(),
             sender_device_id: *r.sender_device_id(),
@@ -385,8 +387,14 @@ impl core::fmt::Debug for HexShort<'_> {
         write!(
             f,
             "{:02x}{:02x}{:02x}{:02x}..{:02x}{:02x}{:02x}{:02x}",
-            self.0[0], self.0[1], self.0[2], self.0[3],
-            self.0[28], self.0[29], self.0[30], self.0[31],
+            self.0[0],
+            self.0[1],
+            self.0[2],
+            self.0[3],
+            self.0[28],
+            self.0[29],
+            self.0[30],
+            self.0[31],
         )
     }
 }
@@ -510,7 +518,7 @@ mod tests {
         header[0] = 0x01; // version
         header[1] = 0x01; // msg_type
         header[2] = 0x01; // crypto_suite
-        // payload_length at offset 38-41 = 100 (big-endian)
+                          // payload_length at offset 38-41 = 100 (big-endian)
         header[38] = 0;
         header[39] = 0;
         header[40] = 0;

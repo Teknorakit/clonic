@@ -72,7 +72,10 @@ mod tests {
 
     impl FmtBuf {
         fn new() -> Self {
-            FmtBuf { buf: [0; 128], len: 0 }
+            FmtBuf {
+                buf: [0; 128],
+                len: 0,
+            }
         }
         fn as_str(&self) -> &str {
             core::str::from_utf8(&self.buf[..self.len]).unwrap()
@@ -101,12 +104,18 @@ mod tests {
     #[test]
     fn display_buffer_too_short() {
         let e = Error::BufferTooShort { need: 58, have: 10 };
-        assert_eq!(display(&e).as_str(), "buffer too short: need 58 bytes, have 10");
+        assert_eq!(
+            display(&e).as_str(),
+            "buffer too short: need 58 bytes, have 10"
+        );
     }
 
     #[test]
     fn display_trailing_bytes() {
-        let e = Error::TrailingBytes { expected: 58, actual: 60 };
+        let e = Error::TrailingBytes {
+            expected: 58,
+            actual: 60,
+        };
         assert_eq!(display(&e).as_str(), "trailing bytes: expected 58, got 60");
     }
 
@@ -132,7 +141,9 @@ mod tests {
     fn display_payload_too_large() {
         let e = Error::PayloadTooLarge(5_000_000_000);
         let s = display(&e);
-        assert!(s.as_str().starts_with("payload too large: 5000000000 bytes"));
+        assert!(s
+            .as_str()
+            .starts_with("payload too large: 5000000000 bytes"));
     }
 
     #[test]
@@ -141,10 +152,7 @@ mod tests {
             Error::BufferTooShort { need: 42, have: 10 },
             Error::BufferTooShort { need: 42, have: 10 },
         );
-        assert_ne!(
-            Error::UnknownVersion(0x01),
-            Error::UnknownVersion(0x02),
-        );
+        assert_ne!(Error::UnknownVersion(0x01), Error::UnknownVersion(0x02),);
     }
 
     #[test]

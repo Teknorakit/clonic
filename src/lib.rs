@@ -80,10 +80,10 @@ pub mod version;
 
 // Re-export primary types at crate root for ergonomics.
 pub use crypto_suite::CryptoSuite;
-pub use envelope::{EnvelopeRef, Flags, HEADER_SIZE, MAC_SIZE, MIN_FRAME_SIZE};
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub use envelope::Envelope;
+pub use envelope::{EnvelopeRef, Flags, HEADER_SIZE, MAC_SIZE, MIN_FRAME_SIZE};
 pub use error::Error;
 pub use msg_type::MsgType;
 pub use residency::ResidencyTag;

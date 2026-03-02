@@ -7,10 +7,10 @@
 mod tests {
     extern crate alloc;
 
-    use clonic::*;
     use clonic::decode::peek_frame_length;
     use clonic::encode::{encode_to_slice, EnvelopeFields};
     use clonic::envelope::{HEADER_SIZE, MAC_SIZE, MIN_FRAME_SIZE};
+    use clonic::*;
 
     // ── Helpers ──────────────────────────────────────────
 
@@ -380,9 +380,9 @@ mod tests {
 mod proptest_roundtrip {
     extern crate alloc;
 
-    use proptest::prelude::*;
-    use clonic::*;
     use clonic::envelope::Flags;
+    use clonic::*;
+    use proptest::prelude::*;
 
     fn arb_msg_type() -> impl Strategy<Value = MsgType> {
         prop_oneof![
@@ -401,16 +401,11 @@ mod proptest_roundtrip {
     }
 
     fn arb_crypto_suite() -> impl Strategy<Value = CryptoSuite> {
-        prop_oneof![
-            Just(CryptoSuite::PqHybrid),
-            Just(CryptoSuite::Classical),
-        ]
+        prop_oneof![Just(CryptoSuite::PqHybrid), Just(CryptoSuite::Classical),]
     }
 
     fn arb_residency() -> impl Strategy<Value = ResidencyTag> {
-        (0u16..999).prop_map(|code| {
-            ResidencyTag::from_country_code(code).unwrap()
-        })
+        (0u16..999).prop_map(|code| ResidencyTag::from_country_code(code).unwrap())
     }
 
     proptest! {
