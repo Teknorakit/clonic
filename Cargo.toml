@@ -2,7 +2,7 @@
 name = "clonic"
 version = "0.1.0"
 edition = "2021"
-rust-version = "1.75"
+rust-version = "1.85"
 license = "MIT"
 description = "Wire protocol types and codec for the Zone Coordination Protocol (ZCP)"
 repository = "https://github.com/Teknorakit/clonic"
