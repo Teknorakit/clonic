@@ -4,21 +4,23 @@ Wire protocol types and codec for the **Zone Coordination Protocol (ZCP)**.
 
 `clonic` defines the binary envelope format that every ZCP message uses on the wire. It is deliberately minimal: types, constants, encode, decode. No crypto, no transport, no business logic.
 
-Think of it like the [`http`](https://crates.io/crates/http) crate: it defines `Request` and `Response` but doesn't open sockets. ZluidrOS and ZluidrEdge SDK build actual networking on top.
+Think of it like the [`http`](https://crates.io/crates/http) crate: it defines `Request` and `Response` but doesn't open sockets. Networking stacks build on top.
+
+## Why ZCP?
+
+Every major communication protocol in use today — MQTT, CoAP, gRPC, AMQP, HTTP — is **residency-blind**. None carry any concept of where data is allowed to exist.
+
+ZCP fixes this. Every envelope carries a 2-byte residency zone tag, cryptographically authenticated by the sender. The routing layer refuses to forward messages outside the declared zone. Data residency enforcement is architectural, not configuration.
+
+Read the full [Protocol Manifesto](docs/MANIFESTO.md).
 
 ## Why "clonic"?
 
-In neurology, a **tonic-clonic** seizure involves two phases: sustained contraction (*tonic*) followed by rapid rhythmic pulses across the nervous system (*clonic*).
+In neurology, a **tonic-clonic** seizure has two phases: sustained contraction (*tonic*) followed by rapid rhythmic pulses propagating across the nervous system (*clonic*).
 
-[`tonic`](https://crates.io/crates/tonic) is already the Rust ecosystem's gRPC framework — sustained connections. `clonic` completes the pair: rapid, rhythmic coordination pulses across a distributed device mesh. The fleet *is* the nervous system.
+[`tonic`](https://crates.io/crates/tonic) is the Rust ecosystem's gRPC framework — persistent channels, sustained connections, request-response between known endpoints. It holds the line open.
 
-## Who Uses This
-
-| Consumer | Environment | Notes |
-|----------|-------------|-------|
-| **ZluidrOS** | Linux (RPi/server, 1–4 GB RAM) | Full OS with CRDT sync, Raft, libp2p, PQ crypto |
-| **ZluidrEdge SDK** | Bare-metal/RTOS (ESP32, STM32, nRF52) | Minimal ZCP speaker, classical crypto only |
-| **Third parties** | Any | Anyone who wants to speak ZCP on the wire |
+`clonic` is the other half: short, rhythmic coordination pulses rippling across a mesh of devices that may appear, disappear, and reconnect at any time. No persistent channel required. The fleet *is* the nervous system.
 
 ## Envelope Layout
 
@@ -37,11 +39,11 @@ Offset  Size  Field              Description
 42+N    16    mac                AES-256-GCM authentication tag
 ```
 
-All multi-byte integers are big-endian (network byte order).
+All multi-byte integers are big-endian (network byte order). Total fixed overhead: 58 bytes.
 
 ## Usage
 
-### `no_std` — Zero-copy parsing (ESP32, bare-metal)
+### `no_std` — Zero-copy parsing (bare-metal, microcontrollers)
 
 ```rust
 use clonic::{EnvelopeRef, MsgType};
@@ -60,7 +62,7 @@ fn handle_frame(buf: &[u8]) {
 }
 ```
 
-### `alloc` — Owned envelopes (ZluidrOS)
+### `alloc` — Owned envelopes (Linux, servers)
 
 ```rust
 use clonic::{Envelope, MsgType, CryptoSuite, ResidencyTag};
@@ -113,20 +115,10 @@ let env = clonic::EnvelopeRef::parse(&frame).unwrap();
 - **No CRDT payloads** — the `payload` field is opaque bytes.
 - **No business logic** — no task scheduling, no routing decisions.
 
-## Repository Structure
-
-```
-clonic (MIT)            ← you are here
-├──▶ zluidros           Full OS (stronger license)
-├──▶ zluidros-edge-sdk  Embedded SDK (Apache-2.0)
-└──▶ (third parties)    Anyone speaking ZCP
-```
-
 ## License
 
-MIT — maximum adoption, zero friction. The value capture is upstream in ZluidrOS and the SaaS/data layers, not at the protocol level.
+MIT — maximum adoption, zero friction.
 
 ## About
 
-Part of the **ZluidrOS** ecosystem by PT Teknorakit Inovasi Indonesia.
-ZluidrOS is a purpose-built operating system for distributed, AI-capable computing in resource-constrained, sovereignty-conscious environments.
+An open protocol by [PT Teknorakit Inovasi Indonesia](https://github.com/Teknorakit).

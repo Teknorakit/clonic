@@ -25,8 +25,10 @@
 //!
 //! | Consumer | Environment | Crypto | Notes |
 //! |----------|-------------|--------|-------|
-//! | **ZluidrOS** | Linux (RPi/server, 1–4 GB RAM) | Full PQ hybrid | Complete OS with CRDT, Raft, libp2p |
-//! | **ZluidrEdge SDK** | Bare-metal/RTOS (ESP32, 256 KB–4 MB) | Classical only | Minimal ZCP speaker |
+//! | Consumer | Environment | Crypto | Notes |
+//! |----------|-------------|--------|-------|
+//! | Full nodes | Linux (RPi/server, 1–4 GB RAM) | Full PQ hybrid | CRDT sync, Raft consensus, libp2p |
+//! | Edge devices | Bare-metal/RTOS (ESP32, 256 KB–4 MB) | Classical only | Minimal ZCP speaker |
 //! | Third parties | Any | Any supported suite | Anyone who wants to speak ZCP |
 //!
 //! ## Envelope Layout (v0x01)
@@ -80,10 +82,10 @@ pub mod version;
 
 // Re-export primary types at crate root for ergonomics.
 pub use crypto_suite::CryptoSuite;
+pub use envelope::{EnvelopeRef, Flags, HEADER_SIZE, MAC_SIZE, MIN_FRAME_SIZE};
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub use envelope::Envelope;
-pub use envelope::{EnvelopeRef, Flags, HEADER_SIZE, MAC_SIZE, MIN_FRAME_SIZE};
 pub use error::Error;
 pub use msg_type::MsgType;
 pub use residency::ResidencyTag;
