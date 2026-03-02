@@ -10,6 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - CHANGELOG.md
 
+## [0.1.2] - 2026-03-02
+
+### Fixed
+- docs.rs build: added explicit `targets = ["x86_64-unknown-linux-gnu"]` to resolve no_std build failures
+
+## [0.1.1] - 2026-03-02
+
+### Added
+- Comprehensive README.md with usage examples and design rationale
+- Updated lib.rs documentation with feature flags and consumer matrix
+- Unit tests for crypto_suite module (4 tests)
+- Feature-gated alloc tests in encode module
+
 ## [0.1.0] - 2026-03-02
 
 Initial public release of the Zone Coordination Protocol (ZCP) wire codec.
@@ -37,5 +50,7 @@ Initial public release of the Zone Coordination Protocol (ZCP) wire codec.
 - Crypto suites: PQ Hybrid (ML-KEM-768 + X25519, ML-DSA-65 + Ed25519, AES-256-GCM), Classical (X25519, Ed25519, AES-256-GCM)
 - Residency tag: 2 bytes, ISO 3166-1 numeric, bit 15 reserved for extension
 
-[Unreleased]: https://github.com/Teknorakit/clonic/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Teknorakit/clonic/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/Teknorakit/clonic/compare/v0.1.1...v0.1.2
+[0.1.1]: https://github.com/Teknorakit/clonic/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/Teknorakit/clonic/releases/tag/v0.1.0
