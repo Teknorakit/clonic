@@ -1,0 +1,108 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -Dwarnings
+
+jobs:
+  # ── no_std compilation (the critical check) ─────────────────────
+  no-std:
+    name: "no_std (${{ matrix.target }})"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - thumbv7em-none-eabihf    # ARM Cortex-M4/M7 (STM32)
+          - riscv32imc-unknown-none-elf  # RISC-V (ESP32-C3)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: "Check no_std (default features)"
+        run: cargo check --target ${{ matrix.target }}
+      - name: "Check no_std + alloc"
+        run: cargo check --target ${{ matrix.target }} --features alloc
+
+  # ── std tests ───────────────────────────────────────────────────
+  test:
+    name: "Test (Rust ${{ matrix.rust }})"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        rust: [stable, "1.75", nightly]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: ${{ matrix.rust }}
+      - name: "Test (default — no_std core only)"
+        run: cargo test
+      - name: "Test (alloc)"
+        run: cargo test --features alloc
+      - name: "Test (std)"
+        run: cargo test --features std
+      - name: "Test (all features)"
+        run: cargo test --all-features
+
+  # ── Cross-compile for ZluidrOS targets ─────────────────────────
+  cross-compile:
+    name: "Cross (${{ matrix.target }})"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target:
+          - x86_64-unknown-linux-musl    # Alpine Linux (servers)
+          - aarch64-unknown-linux-musl   # Raspberry Pi, Orange Pi
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+      - name: "Build (all features)"
+        run: cargo build --target ${{ matrix.target }} --all-features
+
+  # ── Proptest (longer runs on CI) ────────────────────────────────
+  proptest:
+    name: "Proptest"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - name: "Run proptest with 1000 cases"
+        env:
+          PROPTEST_CASES: 1000
+        run: cargo test --features alloc -- proptest
+
+  # ── Lints ───────────────────────────────────────────────────────
+  lint:
+    name: "Lint"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy, rustfmt
+      - name: "clippy (default)"
+        run: cargo clippy -- -D warnings
+      - name: "clippy (all features)"
+        run: cargo clippy --all-features -- -D warnings
+      - name: "rustfmt"
+        run: cargo fmt --check
+
+  # ── docs.rs build ───────────────────────────────────────────────
+  docs:
+    name: "Docs"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@nightly
+      - name: "Build docs (all features)"
+        env:
+          RUSTDOCFLAGS: --cfg docsrs
+        run: cargo doc --all-features --no-deps

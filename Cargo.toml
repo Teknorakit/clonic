@@ -1,0 +1,29 @@
+[package]
+name = "clonic"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "MIT"
+description = "Wire protocol types and codec for the Zone Coordination Protocol (ZCP)"
+repository = "https://github.com/Teknorakit/clonic"
+documentation = "https://docs.rs/clonic"
+readme = "README.md"
+keywords = ["iot", "wire-protocol", "embedded", "no_std", "zcp"]
+categories = ["embedded", "encoding", "network-programming", "no-std"]
+
+[features]
+default = []
+std = ["alloc"]
+alloc = []
+serde = ["dep:serde", "alloc"]
+
+[dependencies]
+serde = { version = "1", default-features = false, features = ["derive", "alloc"], optional = true }
+
+[dev-dependencies]
+proptest = "1"
+serde_json = "1"
+
+[package.metadata.docs.rs]
+all-features = true
+rustdoc-args = ["--cfg", "docsrs"]
