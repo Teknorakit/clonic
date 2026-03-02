@@ -30,3 +30,40 @@ impl Version {
         self as u8
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn current_is_v1() {
+        assert_eq!(Version::CURRENT, Version::V1);
+        assert_eq!(Version::CURRENT.as_byte(), 0x01);
+    }
+
+    #[test]
+    fn from_byte_known() {
+        assert_eq!(Version::from_byte(0x01), Some(Version::V1));
+    }
+
+    #[test]
+    fn from_byte_unknown() {
+        assert_eq!(Version::from_byte(0x00), None);
+        assert_eq!(Version::from_byte(0x02), None);
+        assert_eq!(Version::from_byte(0xFF), None);
+    }
+
+    #[test]
+    fn roundtrip_all_variants() {
+        let versions = [Version::V1];
+        for v in versions {
+            assert_eq!(Version::from_byte(v.as_byte()), Some(v));
+        }
+    }
+
+    #[test]
+    fn byte_stability() {
+        // Wire format contract: these bytes must never change
+        assert_eq!(Version::V1.as_byte(), 0x01);
+    }
+}

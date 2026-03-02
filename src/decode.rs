@@ -44,3 +44,71 @@ pub fn parse(buf: &[u8]) -> Result<EnvelopeRef<'_>, Error> {
 pub fn parse_owned(buf: &[u8]) -> Result<crate::envelope::Envelope, Error> {
     crate::envelope::Envelope::from_bytes(buf)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn peek_frame_length_empty() {
+        assert!(matches!(
+            peek_frame_length(&[]),
+            Err(Error::BufferTooShort { need: 42, have: 0 })
+        ));
+    }
+
+    #[test]
+    fn peek_frame_length_short() {
+        assert!(matches!(
+            peek_frame_length(&[0u8; 41]),
+            Err(Error::BufferTooShort { need: 42, have: 41 })
+        ));
+    }
+
+    #[test]
+    fn peek_frame_length_zero_payload() {
+        let mut header = [0u8; 42];
+        header[0] = 0x01;
+        header[38..42].copy_from_slice(&0u32.to_be_bytes());
+
+        let (pl, total) = peek_frame_length(&header).unwrap();
+        assert_eq!(pl, 0);
+        assert_eq!(total, HEADER_SIZE + MAC_SIZE);
+    }
+
+    #[test]
+    fn peek_frame_length_large_payload() {
+        let mut header = [0u8; 42];
+        header[0] = 0x01;
+        header[38..42].copy_from_slice(&1_000_000u32.to_be_bytes());
+
+        let (pl, total) = peek_frame_length(&header).unwrap();
+        assert_eq!(pl, 1_000_000);
+        assert_eq!(total, HEADER_SIZE + 1_000_000 + MAC_SIZE);
+    }
+
+    #[test]
+    fn peek_accepts_longer_buffer() {
+        // peek only reads first 42 bytes, ignores the rest
+        let mut buf = [0u8; 1024];
+        buf[0] = 0x01;
+        buf[38..42].copy_from_slice(&100u32.to_be_bytes());
+
+        let (pl, _) = peek_frame_length(&buf).unwrap();
+        assert_eq!(pl, 100);
+    }
+
+    #[test]
+    fn parse_delegates_to_envelope_ref() {
+        // Build a minimal valid frame
+        let mut frame = [0u8; 58]; // header + 0 payload + MAC
+        frame[0] = 0x01; // version
+        frame[1] = 0x01; // TaskRoute
+        frame[2] = 0x01; // PqHybrid
+        // payload_length = 0 (already zeros)
+        // MAC = last 16 bytes (already zeros)
+
+        let env = parse(&frame).unwrap();
+        assert_eq!(env.version(), crate::version::Version::V1);
+    }
+}

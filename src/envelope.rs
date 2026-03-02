@@ -390,3 +390,168 @@ impl core::fmt::Debug for HexShort<'_> {
         )
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── Constants ────────────────────────────────────────
+
+    #[test]
+    fn header_size_is_42() {
+        assert_eq!(HEADER_SIZE, 42);
+    }
+
+    #[test]
+    fn mac_size_is_16() {
+        assert_eq!(MAC_SIZE, 16);
+    }
+
+    #[test]
+    fn min_frame_is_header_plus_mac() {
+        assert_eq!(MIN_FRAME_SIZE, HEADER_SIZE + MAC_SIZE);
+        assert_eq!(MIN_FRAME_SIZE, 58);
+    }
+
+    // ── Flags ────────────────────────────────────────────
+
+    #[test]
+    fn flags_none_is_zero() {
+        assert_eq!(Flags::NONE.as_byte(), 0);
+    }
+
+    #[test]
+    fn flags_default_is_none() {
+        assert_eq!(Flags::default(), Flags::NONE);
+    }
+
+    #[test]
+    fn flags_set_and_check() {
+        let f = Flags::NONE.with(Flags::COMPRESSED);
+        assert!(f.has(Flags::COMPRESSED));
+        assert!(!f.has(Flags::FRAGMENTED));
+    }
+
+    #[test]
+    fn flags_set_multiple() {
+        let f = Flags::NONE.with(Flags::COMPRESSED).with(Flags::FRAGMENTED);
+        assert!(f.has(Flags::COMPRESSED));
+        assert!(f.has(Flags::FRAGMENTED));
+        assert_eq!(f.as_byte(), 0b0000_0011);
+    }
+
+    #[test]
+    fn flags_clear() {
+        let f = Flags::from_byte(0b0000_0011);
+        let f = f.without(Flags::COMPRESSED);
+        assert!(!f.has(Flags::COMPRESSED));
+        assert!(f.has(Flags::FRAGMENTED));
+        assert_eq!(f.as_byte(), 0b0000_0010);
+    }
+
+    #[test]
+    fn flags_unknown_bits() {
+        let f = Flags::from_byte(0b0000_0011); // only defined bits
+        assert!(!f.has_unknown_bits());
+
+        let f = Flags::from_byte(0b0000_0100); // bit 2 is reserved
+        assert!(f.has_unknown_bits());
+
+        let f = Flags::from_byte(0b1111_1111); // all bits
+        assert!(f.has_unknown_bits());
+    }
+
+    #[test]
+    fn flags_roundtrip_byte() {
+        for byte in 0u8..=255 {
+            let f = Flags::from_byte(byte);
+            assert_eq!(f.as_byte(), byte);
+        }
+    }
+
+    // ── EnvelopeRef parse edge cases ─────────────────────
+
+    #[test]
+    fn parse_rejects_empty_buffer() {
+        assert!(matches!(
+            EnvelopeRef::parse(&[]),
+            Err(Error::BufferTooShort { need: 58, have: 0 })
+        ));
+    }
+
+    #[test]
+    fn parse_rejects_one_byte() {
+        assert!(matches!(
+            EnvelopeRef::parse(&[0x01]),
+            Err(Error::BufferTooShort { need: 58, have: 1 })
+        ));
+    }
+
+    #[test]
+    fn parse_rejects_header_only() {
+        // 42 bytes header, no MAC
+        let buf = [0u8; 42];
+        assert!(matches!(
+            EnvelopeRef::parse(&buf),
+            Err(Error::BufferTooShort { .. })
+        ));
+    }
+
+    #[test]
+    fn frame_length_from_short_header() {
+        assert_eq!(EnvelopeRef::frame_length(&[0u8; 10]), None);
+        assert_eq!(EnvelopeRef::frame_length(&[0u8; 41]), None);
+    }
+
+    #[test]
+    fn frame_length_from_valid_header() {
+        // Build a minimal valid header with payload_length = 100
+        let mut header = [0u8; 42];
+        header[0] = 0x01; // version
+        header[1] = 0x01; // msg_type
+        header[2] = 0x01; // crypto_suite
+        // payload_length at offset 38-41 = 100 (big-endian)
+        header[38] = 0;
+        header[39] = 0;
+        header[40] = 0;
+        header[41] = 100;
+
+        let len = EnvelopeRef::frame_length(&header).unwrap();
+        assert_eq!(len, 42 + 100 + 16);
+    }
+
+    #[test]
+    fn frame_length_zero_payload() {
+        let mut header = [0u8; 42];
+        header[0] = 0x01;
+        header[1] = 0x01;
+        header[2] = 0x01;
+        // payload_length = 0
+
+        let len = EnvelopeRef::frame_length(&header).unwrap();
+        assert_eq!(len, MIN_FRAME_SIZE);
+    }
+
+    // ── Offset alignment verification ────────────────────
+
+    #[test]
+    fn sender_id_is_4byte_aligned() {
+        // sender_device_id starts at offset 4 — important for ARM zero-copy
+        assert_eq!(OFF_SENDER_ID, 4);
+        assert_eq!(OFF_SENDER_ID % 4, 0);
+    }
+
+    #[test]
+    fn field_offsets_are_contiguous() {
+        assert_eq!(OFF_VERSION, 0);
+        assert_eq!(OFF_MSG_TYPE, 1);
+        assert_eq!(OFF_CRYPTO_SUITE, 2);
+        assert_eq!(OFF_FLAGS, 3);
+        assert_eq!(OFF_SENDER_ID, 4);
+        assert_eq!(OFF_SENDER_ID_END, 36);
+        assert_eq!(OFF_RESIDENCY, 36);
+        assert_eq!(OFF_PAYLOAD_LEN, 38);
+        // 38 + 4 = 42 = HEADER_SIZE
+        assert_eq!(OFF_PAYLOAD_LEN + 4, HEADER_SIZE);
+    }
+}

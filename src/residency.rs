@@ -150,3 +150,239 @@ impl core::fmt::Display for ResidencyTag {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── Constants ────────────────────────────────────────
+
+    #[test]
+    fn constant_values_match_iso3166() {
+        assert_eq!(ResidencyTag::GLOBAL.raw(), 0);
+        assert_eq!(ResidencyTag::INDONESIA.raw(), 360);
+        assert_eq!(ResidencyTag::MALAYSIA.raw(), 458);
+        assert_eq!(ResidencyTag::PHILIPPINES.raw(), 608);
+        assert_eq!(ResidencyTag::VIETNAM.raw(), 704);
+        assert_eq!(ResidencyTag::SINGAPORE.raw(), 702);
+    }
+
+    // ── Construction ─────────────────────────────────────
+
+    #[test]
+    fn from_country_code_valid() {
+        let tag = ResidencyTag::from_country_code(360).unwrap();
+        assert_eq!(tag, ResidencyTag::INDONESIA);
+    }
+
+    #[test]
+    fn from_country_code_zero_is_global() {
+        let tag = ResidencyTag::from_country_code(0).unwrap();
+        assert_eq!(tag, ResidencyTag::GLOBAL);
+        assert!(tag.is_global());
+    }
+
+    #[test]
+    fn from_country_code_max_valid() {
+        // Largest value without hitting extension bit
+        let tag = ResidencyTag::from_country_code(0x7FFF).unwrap();
+        assert_eq!(tag.raw(), 0x7FFF);
+        assert!(!tag.is_extended());
+    }
+
+    #[test]
+    fn from_country_code_rejects_extension_bit() {
+        assert!(ResidencyTag::from_country_code(0x8000).is_none());
+        assert!(ResidencyTag::from_country_code(0x8001).is_none());
+        assert!(ResidencyTag::from_country_code(0xFFFF).is_none());
+    }
+
+    // ── Wire encoding ────────────────────────────────────
+
+    #[test]
+    fn be_bytes_roundtrip() {
+        let tags = [
+            ResidencyTag::GLOBAL,
+            ResidencyTag::INDONESIA,
+            ResidencyTag::MALAYSIA,
+            ResidencyTag::PHILIPPINES,
+            ResidencyTag::VIETNAM,
+            ResidencyTag::SINGAPORE,
+        ];
+        for tag in tags {
+            let bytes = tag.to_be_bytes();
+            let reconstructed = ResidencyTag::from_be_bytes(bytes);
+            assert_eq!(reconstructed, tag, "BE roundtrip failed for {:?}", tag);
+        }
+    }
+
+    #[test]
+    fn indonesia_be_bytes() {
+        // 360 = 0x0168 → [0x01, 0x68] big-endian
+        let bytes = ResidencyTag::INDONESIA.to_be_bytes();
+        assert_eq!(bytes, [0x01, 0x68]);
+    }
+
+    #[test]
+    fn global_be_bytes() {
+        let bytes = ResidencyTag::GLOBAL.to_be_bytes();
+        assert_eq!(bytes, [0x00, 0x00]);
+    }
+
+    // ── Extension bit ────────────────────────────────────
+
+    #[test]
+    fn extension_flag_detection() {
+        let normal = ResidencyTag::from_be_bytes([0x01, 0x68]); // 360
+        assert!(!normal.is_extended());
+
+        let extended = ResidencyTag::from_be_bytes([0x81, 0x68]); // 360 + extension
+        assert!(extended.is_extended());
+    }
+
+    #[test]
+    fn country_code_strips_extension_bit() {
+        let extended = ResidencyTag::from_be_bytes([0x81, 0x68]);
+        assert!(extended.is_extended());
+        assert_eq!(extended.country_code(), 360); // Indonesia code preserved
+    }
+
+    #[test]
+    fn non_extended_country_code_unchanged() {
+        assert_eq!(ResidencyTag::INDONESIA.country_code(), 360);
+        assert_eq!(ResidencyTag::GLOBAL.country_code(), 0);
+    }
+
+    // ── Global detection ─────────────────────────────────
+
+    #[test]
+    fn is_global() {
+        assert!(ResidencyTag::GLOBAL.is_global());
+        assert!(!ResidencyTag::INDONESIA.is_global());
+        assert!(!ResidencyTag::MALAYSIA.is_global());
+
+        // Extension bit set with code 0 is NOT global (it's extended)
+        let extended_zero = ResidencyTag::from_be_bytes([0x80, 0x00]);
+        assert!(!extended_zero.is_global());
+    }
+
+    // ── Zone enforcement ─────────────────────────────────
+
+    #[test]
+    fn global_allows_any_destination() {
+        assert!(ResidencyTag::GLOBAL.allows_destination(ResidencyTag::INDONESIA));
+        assert!(ResidencyTag::GLOBAL.allows_destination(ResidencyTag::MALAYSIA));
+        assert!(ResidencyTag::GLOBAL.allows_destination(ResidencyTag::GLOBAL));
+    }
+
+    #[test]
+    fn same_country_allows() {
+        assert!(ResidencyTag::INDONESIA.allows_destination(ResidencyTag::INDONESIA));
+        assert!(ResidencyTag::MALAYSIA.allows_destination(ResidencyTag::MALAYSIA));
+    }
+
+    #[test]
+    fn different_country_denies() {
+        assert!(!ResidencyTag::INDONESIA.allows_destination(ResidencyTag::MALAYSIA));
+        assert!(!ResidencyTag::MALAYSIA.allows_destination(ResidencyTag::INDONESIA));
+        assert!(!ResidencyTag::INDONESIA.allows_destination(ResidencyTag::SINGAPORE));
+        assert!(!ResidencyTag::VIETNAM.allows_destination(ResidencyTag::PHILIPPINES));
+    }
+
+    #[test]
+    fn country_to_global_is_denied_by_default() {
+        // Conservative: country-restricted data should not go to a
+        // "global" peer without the routing layer's geographic check.
+        assert!(!ResidencyTag::INDONESIA.allows_destination(ResidencyTag::GLOBAL));
+        assert!(!ResidencyTag::MALAYSIA.allows_destination(ResidencyTag::GLOBAL));
+    }
+
+    // ── Display / Debug ──────────────────────────────────
+
+    #[test]
+    fn display_formatting() {
+        let mut buf = heapless_fmt(ResidencyTag::GLOBAL);
+        assert_eq!(buf.as_str(), "GLOBAL");
+
+        buf = heapless_fmt(ResidencyTag::INDONESIA);
+        assert_eq!(buf.as_str(), "360");
+
+        // Zero-padded to 3 digits
+        let tag7 = ResidencyTag::from_country_code(7).unwrap();
+        buf = heapless_fmt(tag7);
+        assert_eq!(buf.as_str(), "007");
+
+        // Extended
+        let ext = ResidencyTag::from_be_bytes([0x81, 0x68]);
+        buf = heapless_fmt(ext);
+        assert_eq!(buf.as_str(), "EXT:360");
+    }
+
+    #[test]
+    fn debug_named_constants() {
+        let dbg = format_debug(ResidencyTag::INDONESIA);
+        assert_eq!(dbg.as_str(), "ResidencyTag::INDONESIA");
+
+        let dbg = format_debug(ResidencyTag::GLOBAL);
+        assert_eq!(dbg.as_str(), "ResidencyTag::GLOBAL");
+    }
+
+    #[test]
+    fn debug_unknown_code() {
+        let tag = ResidencyTag::from_country_code(999).unwrap();
+        let dbg = format_debug(tag);
+        assert_eq!(dbg.as_str(), "ResidencyTag(999)");
+    }
+
+    #[test]
+    fn debug_extended() {
+        let ext = ResidencyTag::from_be_bytes([0x81, 0x68]);
+        let dbg = format_debug(ext);
+        assert_eq!(dbg.as_str(), "ResidencyTag::Extended(360)");
+    }
+
+    // ── Test helpers (no alloc needed) ───────────────────
+
+    fn heapless_fmt(tag: ResidencyTag) -> FmtBuf {
+        let mut buf = FmtBuf::new();
+        core::fmt::Write::write_fmt(&mut buf, format_args!("{}", tag)).unwrap();
+        buf
+    }
+
+    fn format_debug(tag: ResidencyTag) -> FmtBuf {
+        let mut buf = FmtBuf::new();
+        core::fmt::Write::write_fmt(&mut buf, format_args!("{:?}", tag)).unwrap();
+        buf
+    }
+
+    /// Tiny fixed-size string buffer for no_std-compatible formatting tests.
+    struct FmtBuf {
+        buf: [u8; 64],
+        len: usize,
+    }
+
+    impl FmtBuf {
+        fn new() -> Self {
+            FmtBuf {
+                buf: [0; 64],
+                len: 0,
+            }
+        }
+        fn as_str(&self) -> &str {
+            core::str::from_utf8(&self.buf[..self.len]).unwrap()
+        }
+    }
+
+    impl core::fmt::Write for FmtBuf {
+        fn write_str(&mut self, s: &str) -> core::fmt::Result {
+            let bytes = s.as_bytes();
+            let end = self.len + bytes.len();
+            if end > self.buf.len() {
+                return Err(core::fmt::Error);
+            }
+            self.buf[self.len..end].copy_from_slice(bytes);
+            self.len = end;
+            Ok(())
+        }
+    }
+}

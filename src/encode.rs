@@ -114,3 +114,126 @@ pub fn encode_to_vec(envelope: &crate::envelope::Envelope) -> alloc::vec::Vec<u8
     encode_to_slice(&fields, &mut buf).expect("pre-allocated buffer is exactly the right size");
     buf
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn test_id() -> [u8; 32] {
+        [0xAB; 32]
+    }
+    fn test_mac() -> [u8; 16] {
+        [0xCD; 16]
+    }
+
+    fn test_fields<'a>(
+        payload: &'a [u8],
+        id: &'a [u8; 32],
+        mac: &'a [u8; 16],
+    ) -> EnvelopeFields<'a> {
+        EnvelopeFields {
+            version: Version::CURRENT,
+            msg_type: MsgType::TaskRoute,
+            crypto_suite: CryptoSuite::PqHybrid,
+            flags: Flags::NONE,
+            sender_device_id: id,
+            residency_tag: ResidencyTag::INDONESIA,
+            payload,
+            mac,
+        }
+    }
+
+    #[test]
+    fn encode_empty_payload() {
+        let id = test_id();
+        let mac = test_mac();
+        let fields = test_fields(&[], &id, &mac);
+        let mut buf = [0u8; 58];
+        let n = encode_to_slice(&fields, &mut buf).unwrap();
+        assert_eq!(n, 58); // HEADER + 0 + MAC
+    }
+
+    #[test]
+    #[cfg(feature = "alloc")]
+    fn encode_exact_size_buffer() {
+        use alloc::vec;
+        let id = test_id();
+        let mac = test_mac();
+        let payload = [0x42u8; 10];
+        let fields = test_fields(&payload, &id, &mac);
+
+        let total = HEADER_SIZE + 10 + MAC_SIZE;
+        let mut buf = vec![0u8; total];
+        let n = encode_to_slice(&fields, &mut buf).unwrap();
+        assert_eq!(n, total);
+    }
+
+    #[test]
+    fn encode_oversized_buffer_ok() {
+        let id = test_id();
+        let mac = test_mac();
+        let fields = test_fields(&[1, 2, 3], &id, &mac);
+
+        let mut buf = [0u8; 1024];
+        let n = encode_to_slice(&fields, &mut buf).unwrap();
+        assert_eq!(n, HEADER_SIZE + 3 + MAC_SIZE);
+    }
+
+    #[test]
+    fn encode_undersized_buffer_err() {
+        let id = test_id();
+        let mac = test_mac();
+        let fields = test_fields(&[0u8; 100], &id, &mac);
+
+        let mut buf = [0u8; 50]; // too small
+        assert!(matches!(
+            encode_to_slice(&fields, &mut buf),
+            Err(crate::error::Error::BufferTooShort { .. })
+        ));
+    }
+
+    #[test]
+    fn encode_header_fields_correct() {
+        let id = test_id();
+        let mac = test_mac();
+        let fields = EnvelopeFields {
+            version: Version::V1,
+            msg_type: MsgType::SyncCrdt,
+            crypto_suite: CryptoSuite::Classical,
+            flags: Flags::from_byte(Flags::COMPRESSED),
+            sender_device_id: &id,
+            residency_tag: ResidencyTag::INDONESIA,
+            payload: &[],
+            mac: &mac,
+        };
+
+        let mut buf = [0u8; 58];
+        encode_to_slice(&fields, &mut buf).unwrap();
+
+        assert_eq!(buf[0], 0x01); // version
+        assert_eq!(buf[1], 0x02); // SyncCrdt
+        assert_eq!(buf[2], 0x02); // Classical
+        assert_eq!(buf[3], 0x01); // COMPRESSED flag
+        assert_eq!(&buf[4..36], &[0xAB; 32]); // sender_id
+        assert_eq!(&buf[36..38], &[0x01, 0x68]); // Indonesia BE
+        assert_eq!(&buf[38..42], &[0, 0, 0, 0]); // payload_length = 0
+        assert_eq!(&buf[42..58], &[0xCD; 16]); // MAC
+    }
+
+    #[test]
+    fn encode_payload_in_correct_position() {
+        let id = test_id();
+        let mac = test_mac();
+        let payload = [0x11, 0x22, 0x33, 0x44];
+        let fields = test_fields(&payload, &id, &mac);
+
+        let mut buf = [0u8; 128];
+        let n = encode_to_slice(&fields, &mut buf).unwrap();
+
+        // Payload at offset 42
+        assert_eq!(&buf[42..46], &[0x11, 0x22, 0x33, 0x44]);
+        // MAC immediately after payload
+        assert_eq!(&buf[46..62], &[0xCD; 16]);
+        assert_eq!(n, 62);
+    }
+}

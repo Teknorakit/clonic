@@ -65,6 +65,46 @@ impl CryptoSuite {
 
     /// Whether this suite includes post-quantum key exchange.
     pub const fn is_post_quantum(self) -> bool {
-        matches!(self, CryptoSuite::PqHybrid)
+        match self {
+            CryptoSuite::PqHybrid => true,
+            CryptoSuite::Classical => false,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn all_variants_roundtrip() {
+        let suites = [CryptoSuite::PqHybrid, CryptoSuite::Classical];
+        for s in suites {
+            assert_eq!(
+                CryptoSuite::from_byte(s.as_byte()),
+                Some(s),
+                "roundtrip failed for {:?}",
+                s
+            );
+        }
+    }
+
+    #[test]
+    fn byte_values_are_stable() {
+        assert_eq!(CryptoSuite::PqHybrid.as_byte(), 0x01);
+        assert_eq!(CryptoSuite::Classical.as_byte(), 0x02);
+    }
+
+    #[test]
+    fn from_byte_unknown() {
+        assert_eq!(CryptoSuite::from_byte(0x00), None);
+        assert_eq!(CryptoSuite::from_byte(0x03), None);
+        assert_eq!(CryptoSuite::from_byte(0xFF), None);
+    }
+
+    #[test]
+    fn post_quantum_flag() {
+        assert!(CryptoSuite::PqHybrid.is_post_quantum());
+        assert!(!CryptoSuite::Classical.is_post_quantum());
     }
 }

@@ -124,3 +124,117 @@ pub enum MsgRange {
     /// Unallocated range.
     Unknown,
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // ── from_byte / as_byte roundtrip ────────────────────
+
+    #[test]
+    fn all_variants_roundtrip() {
+        let variants = [
+            MsgType::TaskRoute,
+            MsgType::SyncCrdt,
+            MsgType::DeviceOrch,
+            MsgType::DhtFindNode,
+            MsgType::DhtGetValue,
+            MsgType::DhtPutValue,
+            MsgType::GossipBroadcast,
+            MsgType::GossipSubscribe,
+            MsgType::ProvisionRequest,
+            MsgType::ProvisionCert,
+            MsgType::ProvisionRevoke,
+        ];
+        for v in variants {
+            assert_eq!(
+                MsgType::from_byte(v.as_byte()),
+                Some(v),
+                "roundtrip failed for {:?}",
+                v
+            );
+        }
+    }
+
+    // ── Wire format byte stability ───────────────────────
+
+    #[test]
+    fn byte_values_are_stable() {
+        // Wire format contract: these bytes must never change
+        assert_eq!(MsgType::TaskRoute.as_byte(), 0x01);
+        assert_eq!(MsgType::SyncCrdt.as_byte(), 0x02);
+        assert_eq!(MsgType::DeviceOrch.as_byte(), 0x03);
+        assert_eq!(MsgType::DhtFindNode.as_byte(), 0x10);
+        assert_eq!(MsgType::DhtGetValue.as_byte(), 0x11);
+        assert_eq!(MsgType::DhtPutValue.as_byte(), 0x12);
+        assert_eq!(MsgType::GossipBroadcast.as_byte(), 0x20);
+        assert_eq!(MsgType::GossipSubscribe.as_byte(), 0x21);
+        assert_eq!(MsgType::ProvisionRequest.as_byte(), 0x30);
+        assert_eq!(MsgType::ProvisionCert.as_byte(), 0x31);
+        assert_eq!(MsgType::ProvisionRevoke.as_byte(), 0x32);
+    }
+
+    // ── Unknown bytes ────────────────────────────────────
+
+    #[test]
+    fn from_byte_returns_none_for_unknown() {
+        assert_eq!(MsgType::from_byte(0x00), None);
+        assert_eq!(MsgType::from_byte(0x04), None); // in Core range but undefined
+        assert_eq!(MsgType::from_byte(0x13), None); // in DHT range but undefined
+        assert_eq!(MsgType::from_byte(0x80), None);
+        assert_eq!(MsgType::from_byte(0xFF), None);
+    }
+
+    // ── Range classification ─────────────────────────────
+
+    #[test]
+    fn range_boundaries() {
+        // Core: 0x01–0x0F
+        assert_eq!(MsgType::range_of(0x01), MsgRange::Core);
+        assert_eq!(MsgType::range_of(0x0F), MsgRange::Core);
+
+        // DHT: 0x10–0x1F
+        assert_eq!(MsgType::range_of(0x10), MsgRange::Dht);
+        assert_eq!(MsgType::range_of(0x1F), MsgRange::Dht);
+
+        // Gossip: 0x20–0x2F
+        assert_eq!(MsgType::range_of(0x20), MsgRange::Gossip);
+        assert_eq!(MsgType::range_of(0x2F), MsgRange::Gossip);
+
+        // Provisioning: 0x30–0x3F
+        assert_eq!(MsgType::range_of(0x30), MsgRange::Provisioning);
+        assert_eq!(MsgType::range_of(0x3F), MsgRange::Provisioning);
+
+        // Heartbeat: 0x40–0x4F
+        assert_eq!(MsgType::range_of(0x40), MsgRange::Heartbeat);
+        assert_eq!(MsgType::range_of(0x4F), MsgRange::Heartbeat);
+
+        // Vendor: 0xF0–0xFF
+        assert_eq!(MsgType::range_of(0xF0), MsgRange::Vendor);
+        assert_eq!(MsgType::range_of(0xFF), MsgRange::Vendor);
+    }
+
+    #[test]
+    fn gaps_are_unknown() {
+        // Between allocated ranges
+        assert_eq!(MsgType::range_of(0x00), MsgRange::Unknown);
+        assert_eq!(MsgType::range_of(0x50), MsgRange::Unknown);
+        assert_eq!(MsgType::range_of(0x80), MsgRange::Unknown);
+        assert_eq!(MsgType::range_of(0xEF), MsgRange::Unknown);
+    }
+
+    #[test]
+    fn defined_variants_in_correct_range() {
+        assert_eq!(MsgType::range_of(MsgType::TaskRoute.as_byte()), MsgRange::Core);
+        assert_eq!(MsgType::range_of(MsgType::SyncCrdt.as_byte()), MsgRange::Core);
+        assert_eq!(MsgType::range_of(MsgType::DeviceOrch.as_byte()), MsgRange::Core);
+        assert_eq!(MsgType::range_of(MsgType::DhtFindNode.as_byte()), MsgRange::Dht);
+        assert_eq!(MsgType::range_of(MsgType::DhtGetValue.as_byte()), MsgRange::Dht);
+        assert_eq!(MsgType::range_of(MsgType::DhtPutValue.as_byte()), MsgRange::Dht);
+        assert_eq!(MsgType::range_of(MsgType::GossipBroadcast.as_byte()), MsgRange::Gossip);
+        assert_eq!(MsgType::range_of(MsgType::GossipSubscribe.as_byte()), MsgRange::Gossip);
+        assert_eq!(MsgType::range_of(MsgType::ProvisionRequest.as_byte()), MsgRange::Provisioning);
+        assert_eq!(MsgType::range_of(MsgType::ProvisionCert.as_byte()), MsgRange::Provisioning);
+        assert_eq!(MsgType::range_of(MsgType::ProvisionRevoke.as_byte()), MsgRange::Provisioning);
+    }
+}
