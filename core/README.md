@@ -1,8 +1,8 @@
-# clonic
+# clonic-core
 
 Wire protocol types and codec for the **Zone Coordination Protocol (ZCP)**.
 
-`clonic` defines the binary envelope format that every ZCP message uses on the wire. It is deliberately minimal: types, constants, encode, decode. No crypto, no transport, no business logic.
+`clonic-core` defines the binary envelope format that every ZCP message uses on the wire. It is deliberately minimal: types, constants, encode, decode. No crypto, no transport, no business logic.
 
 Think of it like the [`http`](https://crates.io/crates/http) crate: it defines `Request` and `Response` but doesn't open sockets. Networking stacks build on top.
 
@@ -65,7 +65,7 @@ fn handle_frame(buf: &[u8]) {
 ### `alloc` — Owned envelopes (Linux, servers)
 
 ```rust
-use clonic::{Envelope, MsgType, CryptoSuite, ResidencyTag};
+use clonic_core::{Envelope, MsgType, CryptoSuite, ResidencyTag};
 
 let envelope = Envelope::new(
     MsgType::TaskRoute,
@@ -82,8 +82,8 @@ let wire_bytes = envelope.to_bytes();
 ### Transport framing
 
 ```rust
-use clonic::decode::peek_frame_length;
-use clonic::envelope::HEADER_SIZE;
+use clonic_core::decode::peek_frame_length;
+use clonic_core::envelope::HEADER_SIZE;
 
 // Step 1: read exactly 42 bytes from the wire
 let header_buf = read_exact(stream, HEADER_SIZE);

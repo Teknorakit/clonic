@@ -1,0 +1,30 @@
+[package]
+name = "clonic-crypto"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Post-quantum hybrid cryptography for Zone Coordination Protocol (ZCP)"
+repository.workspace = true
+documentation = "https://docs.rs/clonic-crypto"
+keywords = ["cryptography", "post-quantum", "zcp", "ml-kem", "ml-dsa"]
+categories = ["cryptography", "no-std"]
+
+[features]
+default = []
+std = ["alloc"]
+alloc = []
+serde = ["dep:serde", "alloc"]
+
+[dependencies]
+pqcrypto = { version = "0.2", default-features = false }
+x25519-dalek = { version = "2", default-features = false, features = ["static_secrets"] }
+ed25519-dalek = { version = "2", default-features = false, features = ["hazmat"] }
+aes-gcm = { version = "0.10", default-features = false, features = ["aes"] }
+hkdf = { version = "0.12", default-features = false }
+sha3 = { version = "0.10", default-features = false }
+serde = { version = "1", default-features = false, features = ["derive", "alloc"], optional = true }
+zeroize = { version = "1", default-features = false, features = ["alloc"] }
+
+[dev-dependencies]
+hex = "0.4"

@@ -4,7 +4,7 @@ End-to-end development plan to take the Zone Coordination Protocol (ZCP) wire co
 Current State Assessment
 What exists (v0.1.2):
 
-✅ Core wire protocol codec (clonic crate)
+✅ Core wire protocol codec (`clonic-core` crate)
 ✅ 42-byte envelope with residency tag (offset 36)
 ✅ Zero-copy parsing (EnvelopeRef) for no_std
 ✅ Owned envelopes (Envelope) with alloc feature

@@ -1,0 +1,26 @@
+[package]
+name = "clonic-identity"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Device identity and provisioning for Zone Coordination Protocol (ZCP)"
+repository.workspace = true
+documentation = "https://docs.rs/clonic-identity"
+keywords = ["identity", "provisioning", "zcp", "certificates", "ed25519"]
+categories = ["cryptography", "no-std"]
+
+[features]
+default = []
+std = ["alloc"]
+alloc = []
+serde = ["dep:serde", "alloc"]
+
+[dependencies]
+clonic-crypto = { path = "../crypto", version = "0.1.2", default-features = false }
+ed25519-dalek = { version = "2", default-features = false, features = ["hazmat"] }
+serde = { version = "1", default-features = false, features = ["derive", "alloc"], optional = true }
+zeroize = { version = "1", default-features = false, features = ["alloc"] }
+
+[dev-dependencies]
+hex = "0.4"

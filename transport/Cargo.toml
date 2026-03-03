@@ -1,0 +1,22 @@
+[package]
+name = "clonic-transport"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Transport abstraction layer for Zone Coordination Protocol (ZCP)"
+repository.workspace = true
+documentation = "https://docs.rs/clonic-transport"
+keywords = ["transport", "zcp", "networking", "no_std"]
+categories = ["network-programming", "no-std"]
+
+[features]
+default = []
+std = ["alloc"]
+alloc = []
+serde = ["dep:serde", "alloc"]
+
+[dependencies]
+serde = { version = "1", default-features = false, features = ["derive", "alloc"], optional = true }
+
+[dev-dependencies]

@@ -1,4 +1,4 @@
-//! # clonic
+//! # clonic-core
 //!
 //! Wire protocol types and codec for the **Zone Coordination Protocol (ZCP)**.
 //!
@@ -17,7 +17,7 @@
 //!
 //! ## Design Analogy
 //!
-//! `clonic` is to ZCP what the [`http`](https://crates.io/crates/http) crate
+//! `clonic-core` is to ZCP what the [`http`](https://crates.io/crates/http) crate
 //! is to Hyper: it defines `Request`, `Response`, `StatusCode` — but doesn't open
 //! sockets. Any ZCP implementation builds actual networking on top.
 //!

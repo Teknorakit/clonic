@@ -13,19 +13,19 @@ Checklist derived from ROADMAP.md to drive implementation.
 - ✅ Two-phase framing: read 42B header, peek length, read payload+MAC
 
 ## Phase 1: Cryptography Foundation
-- [ ] Create `clonic-crypto` crate (separate from wire codec)
+- [x] Create `clonic-crypto` crate (separate from `clonic-core` wire codec)
 - [ ] Implement Suite 0x01 (PQ Hybrid): ML-KEM-768 + X25519 KEM with HKDF-SHA3-256
 - [ ] Implement Suite 0x01 signatures: ML-DSA-65 + Ed25519
 - [ ] Implement Suite 0x02 (Classical): X25519 KEM, Ed25519 signatures
 - [ ] Implement AES-256-GCM with per-message HKDF-derived keys (both suites)
-- [ ] Add crypto-agility framework (suite registry, algorithm rotation)
+- [x] Add crypto-agility framework (suite registry, algorithm rotation)
 - [ ] Write crypto KATs (known-answer tests) and cross-implementation validation
 - [ ] Document suite selection guidelines (PQ Hybrid for nodes, Classical for edge)
 
-- [ ] Create `clonic-identity` crate
+- [x] Create `clonic-identity` crate
 - [ ] Design offline-capable certificate chain (root → server → device, trust decay)
-- [ ] Implement Ed25519-based device identity (32-byte public key = sender_device_id)
-- [ ] Implement provisioning messages: REQUEST (0x30), CERT (0x31), REVOKE (0x32)
+- [x] Implement Ed25519-based device identity (32-byte public key = sender_device_id)
+- [x] Implement provisioning messages: REQUEST (0x30), CERT (0x31), REVOKE (0x32)
 - [ ] Build certificate validation with trust decay by depth
 - [ ] Implement key rotation mechanism
 - [ ] Add secure key storage abstraction (filesystem, TPM, secure enclave)
@@ -33,15 +33,15 @@ Checklist derived from ROADMAP.md to drive implementation.
 - [ ] Document provisioning workflow and security model
 
 ## Phase 2: Transport Layer
-- [ ] Create `clonic-transport` crate (core abstractions)
+- [x] Create `clonic-transport` crate (core abstractions)
 - [ ] Define `Transport` trait (send, recv, framing, error handling)
-- [ ] Implement two-phase framing (1: read 42B, 2: peek_frame_length, 3: read payload+MAC)
+- [x] Implement two-phase framing (1: read 42B, 2: peek_frame_length, 3: read payload+MAC)
 - [ ] Add connection lifecycle management (connect, disconnect, reconnect)
 - [ ] Define transport-specific configuration (TCP ports, BLE UUIDs, LoRa params)
 - [ ] Create transport registry for multi-transport nodes
 - [ ] Write transport adapter tests
 
-- [ ] Create `clonic-transport-tcp` crate
+- [x] Create `clonic-transport-tcp` crate
 - [ ] Implement TCP transport with async/await (tokio)
 - [ ] Add TLS wrapper for encrypted TCP channels
 - [ ] Implement connection pooling and keepalive

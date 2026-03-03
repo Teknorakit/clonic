@@ -1,0 +1,22 @@
+[package]
+name = "clonic-transport-tcp"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "TCP/IP transport implementation for Zone Coordination Protocol (ZCP)"
+repository.workspace = true
+documentation = "https://docs.rs/clonic-transport-tcp"
+keywords = ["transport", "tcp", "zcp", "networking"]
+categories = ["network-programming"]
+
+[features]
+default = ["std"]
+std = ["tokio", "tokio/full"]
+
+[dependencies]
+clonic-transport = { path = "../transport", version = "0.1.2", default-features = false }
+tokio = { version = "1", features = ["net", "io-util", "time"], optional = true }
+serde = { version = "1", default-features = false, features = ["derive", "alloc"], optional = true }
+
+[dev-dependencies]

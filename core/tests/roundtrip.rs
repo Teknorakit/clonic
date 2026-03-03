@@ -1,4 +1,4 @@
-//! Tests for clonic encode/decode roundtrip and validation.
+//! Tests for clonic-core encode/decode roundtrip and validation.
 //!
 //! Run with: `cargo test --features alloc`
 //! Proptest: `cargo test --features alloc -- --include-ignored`
@@ -7,10 +7,10 @@
 mod tests {
     extern crate alloc;
 
-    use clonic::decode::peek_frame_length;
-    use clonic::encode::{encode_to_slice, EnvelopeFields};
-    use clonic::envelope::{HEADER_SIZE, MAC_SIZE, MIN_FRAME_SIZE};
-    use clonic::*;
+    use clonic_core::decode::peek_frame_length;
+    use clonic_core::encode::{encode_to_slice, EnvelopeFields};
+    use clonic_core::envelope::{HEADER_SIZE, MAC_SIZE, MIN_FRAME_SIZE};
+    use clonic_core::*;
 
     // ── Helpers ──────────────────────────────────────────
 
