@@ -14,10 +14,19 @@ Checklist derived from ROADMAP.md to drive implementation.
 
 ## Phase 1: Cryptography Foundation
 - [x] Create `clonic-crypto` crate (separate from `clonic-core` wire codec)
+- [x] Implement Suite 0x02 (Classical): X25519 KEM with HKDF-SHA3-256
+  - [x] X25519 keygen with OsRng CSPRNG
+  - [x] Encapsulate/decapsulate with HKDF-SHA3-256 key derivation
+  - [x] Input validation (context length bounds)
+  - [x] Secret key zeroization on drop
 - [ ] Implement Suite 0x01 (PQ Hybrid): ML-KEM-768 + X25519 KEM with HKDF-SHA3-256
+  - [x] Framework and input validation
+  - [ ] X25519 encapsulation/decapsulation
+  - [ ] ML-KEM-768 integration (requires pqcrypto or custom impl)
+  - [x] Hybrid KEM combiner with HKDF-SHA3-256
 - [ ] Implement Suite 0x01 signatures: ML-DSA-65 + Ed25519
-- [ ] Implement Suite 0x02 (Classical): X25519 KEM, Ed25519 signatures
-- [ ] Implement AES-256-GCM with per-message HKDF-derived keys (both suites)
+- [ ] Implement Suite 0x02 signatures: Ed25519
+- [ ] Implement AES-256-GCM with per-message HKDF-SHA3-256-derived keys (both suites)
 - [x] Add crypto-agility framework (suite registry, algorithm rotation)
 - [ ] Write crypto KATs (known-answer tests) and cross-implementation validation
 - [ ] Document suite selection guidelines (PQ Hybrid for nodes, Classical for edge)

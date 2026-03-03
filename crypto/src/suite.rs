@@ -3,6 +3,8 @@
 //! Defines Suite 0x01 (PQ Hybrid) and Suite 0x02 (Classical) per MANIFESTO.md Section 4.4.
 
 use crate::error::Error;
+use hkdf::Hkdf;
+use sha3::Sha3_256;
 
 /// Cryptographic suite identifier (from ZCP envelope offset 2).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -65,7 +67,9 @@ pub struct SignatureOutput {
 
 #[cfg(feature = "alloc")]
 mod alloc_support {
-    use alloc::vec::Vec;
+    use crate::error::Error;
+    use hkdf::Hkdf;
+    use sha3::Sha3_256;
 
     /// Per-message key derivation using HKDF-SHA3-256.
     ///
@@ -78,7 +82,7 @@ mod alloc_support {
     ///
     /// # Returns
     /// 32-byte AES-256-GCM key
-    pub fn derive_symmetric_key(shared_secret: &[u8; 32], context: &[u8]) -> [u8; 32] {
+    pub fn derive_symmetric_key(shared_secret: &[u8; 32], _context: &[u8]) -> [u8; 32] {
         // TODO: Implement HKDF-SHA3-256 derivation
         // For now, placeholder
         let mut key = [0u8; 32];
@@ -91,25 +95,33 @@ mod alloc_support {
     /// Per MANIFESTO.md Section 6.1:
     /// `session_key = HKDF-SHA3-256(X25519_shared || ML-KEM-768_shared, context)`
     ///
+    /// Combines both shared secrets using HKDF-SHA3-256 for cryptographic strength.
+    ///
     /// # Arguments
     /// - `x25519_shared`: 32-byte X25519 shared secret
     /// - `ml_kem_shared`: 32-byte ML-KEM-768 shared secret
     /// - `context`: Domain separation string
     ///
     /// # Returns
-    /// 32-byte session key
+    /// 32-byte session key derived via HKDF-SHA3-256
     pub fn hybrid_kem_combine(
         x25519_shared: &[u8; 32],
         ml_kem_shared: &[u8; 32],
         context: &[u8],
-    ) -> [u8; 32] {
-        // TODO: Implement HKDF-SHA3-256(X25519_shared || ML-KEM-768_shared, context)
-        // For now, placeholder XOR
-        let mut result = [0u8; 32];
-        for i in 0..32 {
-            result[i] = x25519_shared[i] ^ ml_kem_shared[i];
-        }
-        result
+    ) -> Result<[u8; 32], Error> {
+        // Concatenate both shared secrets: X25519 || ML-KEM-768
+        let mut combined = [0u8; 64];
+        combined[..32].copy_from_slice(x25519_shared);
+        combined[32..].copy_from_slice(ml_kem_shared);
+
+        // Derive session key using HKDF-SHA3-256(combined, context)
+        let hkdf = Hkdf::<Sha3_256>::new(Some(context), &combined);
+        let mut session_key = [0u8; 32];
+        hkdf
+            .expand(b"ZCP-hybrid-kem", &mut session_key)
+            .map_err(|_| Error::InvalidKeyLength)?;
+
+        Ok(session_key)
     }
 }
 

@@ -1,5 +1,6 @@
 //! Error types for cryptographic operations.
 
+/// Cryptographic operation errors.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     /// Invalid key material length

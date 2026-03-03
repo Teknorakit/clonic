@@ -31,8 +31,14 @@ extern crate std;
 pub mod error;
 pub mod suite;
 
+#[cfg(feature = "alloc")]
+pub mod kem;
+
 pub use error::Error;
 pub use suite::CryptoSuite;
 
 #[cfg(feature = "alloc")]
 pub use suite::{KemOutput, SignatureOutput};
+
+#[cfg(feature = "alloc")]
+pub use kem::{KemKeypair, KemEncapsulation, PqHybridKem, ClassicalKem};
