@@ -14,9 +14,7 @@ pub struct DeviceIdentity {
 impl DeviceIdentity {
     /// Create device identity from 32-byte public key.
     pub fn from_bytes(bytes: &[u8; 32]) -> Self {
-        DeviceIdentity {
-            public_key: *bytes,
-        }
+        DeviceIdentity { public_key: *bytes }
     }
 
     /// Return public key as bytes.

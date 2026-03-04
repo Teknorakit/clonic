@@ -1,5 +1,6 @@
 //! Error types for identity and provisioning operations.
 
+/// Identity and provisioning operation errors.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     /// Invalid device identity (public key)

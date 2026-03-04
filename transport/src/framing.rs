@@ -37,12 +37,7 @@ impl TransportFraming {
         }
 
         // Payload length at offset 38-41, big-endian
-        let payload_length = u32::from_be_bytes([
-            header[38],
-            header[39],
-            header[40],
-            header[41],
-        ]);
+        let payload_length = u32::from_be_bytes([header[38], header[39], header[40], header[41]]);
 
         let total = constants::HEADER_SIZE + (payload_length as usize) + constants::MAC_SIZE;
         Ok((payload_length, total))

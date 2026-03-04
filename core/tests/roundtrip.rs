@@ -383,7 +383,6 @@ mod proptest_roundtrip {
     use clonic_core::envelope::Flags;
     use clonic_core::msg_type::MsgType;
     use clonic_core::{CryptoSuite, Envelope, ResidencyTag, Version};
-    use alloc::vec::Vec;
     use proptest::prelude::*;
 
     fn arb_msg_type() -> impl Strategy<Value = MsgType> {
@@ -426,7 +425,7 @@ mod proptest_roundtrip {
                 crypto_suite,
                 device_id,
                 residency,
-                Vec::from(payload.clone()),
+                payload.clone(),
                 mac,
             ).with_flags(Flags::from_byte(flags_byte));
 

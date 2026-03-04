@@ -1,5 +1,6 @@
 //! Error types for transport operations.
 
+/// Transport operation errors.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
     /// Connection failed

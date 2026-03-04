@@ -8,6 +8,13 @@
 
 use crate::error::Error;
 use hkdf::Hkdf;
+use pqcrypto::kem::kyber768;
+use pqcrypto::kem::kyber768::{
+    Ciphertext as MlCiphertext, PublicKey as MlPublicKey, SecretKey as MlSecretKey,
+};
+use pqcrypto::traits::kem::{
+    Ciphertext, PublicKey as TraitPublicKey, SecretKey as TraitSecretKey, SharedSecret,
+};
 use rand_core::OsRng;
 use sha3::Sha3_256;
 use x25519_dalek::{PublicKey, StaticSecret};
@@ -55,9 +62,23 @@ impl PqHybridKem {
     ///
     /// Returns (X25519 keypair, ML-KEM-768 keypair).
     pub fn keygen() -> Result<(KemKeypair, KemKeypair), Error> {
-        // TODO: Implement X25519 keygen
-        // TODO: Implement ML-KEM-768 keygen
-        Err(Error::BufferTooSmall) // Placeholder
+        // X25519 keypair
+        let x_secret = StaticSecret::random_from_rng(OsRng);
+        let x_public = PublicKey::from(&x_secret);
+
+        let x_kp = KemKeypair {
+            public_key: Vec::from(x_public.as_bytes()),
+            secret_key: Vec::from(x_secret.to_bytes()),
+        };
+
+        // ML-KEM-768 keypair
+        let (ml_pk, ml_sk) = kyber768::keypair();
+        let ml_kp = KemKeypair {
+            public_key: Vec::from(ml_pk.as_bytes()),
+            secret_key: Vec::from(ml_sk.as_bytes()),
+        };
+
+        Ok((x_kp, ml_kp))
     }
 
     /// Encapsulate: generate shared secret and encapsulated key.
@@ -75,22 +96,46 @@ impl PqHybridKem {
     /// # Returns
     /// Shared secret (32 bytes) and combined encapsulated key (1088 + 32 = 1120 bytes)
     pub fn encapsulate(
-        _x25519_pk: &[u8; 32],
+        x25519_pk: &[u8; 32],
         ml_kem_pk: &[u8],
         context: &[u8],
     ) -> Result<KemEncapsulation, Error> {
         // Validate inputs
-        if ml_kem_pk.len() != 1184 {
+        if ml_kem_pk.len() != kyber768::public_key_bytes() {
             return Err(Error::InvalidKeyLength);
         }
         if context.is_empty() || context.len() > 256 {
             return Err(Error::InvalidKeyLength);
         }
+        // X25519 ephemeral encapsulation
+        let eph_secret = StaticSecret::random_from_rng(OsRng);
+        let eph_public = PublicKey::from(&eph_secret);
+        let recipient_public = PublicKey::from(*x25519_pk);
+        let x25519_shared = eph_secret.diffie_hellman(&recipient_public);
 
-        // TODO: Implement X25519 encapsulation
-        // TODO: Implement ML-KEM-768 encapsulation
-        // TODO: Combine with HKDF-SHA3-256
-        Err(Error::BufferTooSmall) // Placeholder
+        // ML-KEM-768 encapsulation
+        let ml_pk = MlPublicKey::from_bytes(ml_kem_pk);
+        // kyber768::encapsulate returns (SharedSecret, Ciphertext)
+        let (ml_shared, ml_ct) = kyber768::encapsulate(ml_pk);
+
+        // Combine shared secrets via HKDF-SHA3-256
+        let mut combined = [0u8; 64];
+        combined[..32].copy_from_slice(x25519_shared.as_bytes());
+        combined[32..].copy_from_slice(ml_shared.as_bytes());
+        let hkdf = Hkdf::<Sha3_256>::new(Some(context), &combined);
+        let mut session_key = [0u8; 32];
+        hkdf.expand(b"ZCP-hybrid-kem", &mut session_key)
+            .map_err(|_| Error::InvalidKeyLength)?;
+
+        // Combined encapsulated key: ML-KEM ciphertext || X25519 ephemeral public key
+        let mut enc = Vec::with_capacity(ml_ct.as_bytes().len() + 32);
+        enc.extend_from_slice(ml_ct.as_bytes());
+        enc.extend_from_slice(eph_public.as_bytes());
+
+        Ok(KemEncapsulation {
+            shared_secret: session_key,
+            encapsulated_key: enc,
+        })
     }
 
     /// Decapsulate: recover shared secret from encapsulated key.
@@ -104,15 +149,46 @@ impl PqHybridKem {
     /// # Returns
     /// Shared secret (32 bytes)
     pub fn decapsulate(
-        _x25519_sk: &[u8; 32],
-        _ml_kem_sk: &[u8],
-        _encapsulated_key: &[u8],
-        _context: &[u8],
+        x25519_sk: &[u8; 32],
+        ml_kem_sk: &[u8],
+        encapsulated_key: &[u8],
+        context: &[u8],
     ) -> Result<[u8; 32], Error> {
-        // TODO: Implement X25519 decapsulation
-        // TODO: Implement ML-KEM-768 decapsulation
-        // TODO: Combine with SHA3-256
-        Err(Error::BufferTooSmall) // Placeholder
+        if ml_kem_sk.len() != kyber768::secret_key_bytes() {
+            return Err(Error::InvalidKeyLength);
+        }
+        if encapsulated_key.len() != kyber768::ciphertext_bytes() + 32 {
+            return Err(Error::InvalidCiphertextLength);
+        }
+        if context.is_empty() || context.len() > 256 {
+            return Err(Error::InvalidKeyLength);
+        }
+
+        let (ml_ct_bytes, x25519_eph_bytes) =
+            encapsulated_key.split_at(kyber768::ciphertext_bytes());
+
+        // X25519 shared secret
+        let eph_public = PublicKey::from(
+            <[u8; 32]>::try_from(x25519_eph_bytes).map_err(|_| Error::InvalidCiphertextLength)?,
+        );
+        let secret = StaticSecret::from(*x25519_sk);
+        let x25519_shared = secret.diffie_hellman(&eph_public);
+
+        // ML-KEM decapsulation
+        let ml_ct = MlCiphertext::from_bytes(ml_ct_bytes);
+        let ml_sk = MlSecretKey::from_bytes(ml_kem_sk);
+        let ml_shared = kyber768::decapsulate(ml_ct, ml_sk);
+
+        // Combine with HKDF-SHA3-256
+        let mut combined = [0u8; 64];
+        combined[..32].copy_from_slice(x25519_shared.as_bytes());
+        combined[32..].copy_from_slice(ml_shared.as_bytes());
+        let hkdf = Hkdf::<Sha3_256>::new(Some(context), &combined);
+        let mut session_key = [0u8; 32];
+        hkdf.expand(b"ZCP-hybrid-kem", &mut session_key)
+            .map_err(|_| Error::InvalidKeyLength)?;
+
+        Ok(session_key)
     }
 }
 
@@ -143,10 +219,7 @@ impl ClassicalKem {
     ///
     /// # Returns
     /// Shared secret (32 bytes) and encapsulated key (32 bytes, the ephemeral public key)
-    pub fn encapsulate(
-        public_key: &[u8; 32],
-        context: &[u8],
-    ) -> Result<KemEncapsulation, Error> {
+    pub fn encapsulate(public_key: &[u8; 32], context: &[u8]) -> Result<KemEncapsulation, Error> {
         // Validate context length
         if context.is_empty() || context.len() > 256 {
             return Err(Error::InvalidKeyLength);
@@ -163,8 +236,7 @@ impl ClassicalKem {
         // Derive session key using HKDF-SHA3-256(shared_secret, context)
         let hkdf = Hkdf::<Sha3_256>::new(Some(context), shared_secret_bytes.as_bytes());
         let mut session_key = [0u8; 32];
-        hkdf
-            .expand(b"ZCP-session-key", &mut session_key)
+        hkdf.expand(b"ZCP-session-key", &mut session_key)
             .map_err(|_| Error::InvalidKeyLength)?;
 
         Ok(KemEncapsulation {
@@ -192,8 +264,8 @@ impl ClassicalKem {
         }
 
         // Parse encapsulated key as ephemeral public key
-        let ephemeral_bytes = <[u8; 32]>::try_from(encapsulated_key)
-            .map_err(|_| Error::InvalidCiphertextLength)?;
+        let ephemeral_bytes =
+            <[u8; 32]>::try_from(encapsulated_key).map_err(|_| Error::InvalidCiphertextLength)?;
         let ephemeral_public = PublicKey::from(ephemeral_bytes);
 
         // Perform X25519 key exchange
@@ -203,8 +275,7 @@ impl ClassicalKem {
         // Derive session key using HKDF-SHA3-256(shared_secret, context)
         let hkdf = Hkdf::<Sha3_256>::new(Some(context), shared_secret_bytes.as_bytes());
         let mut session_key = [0u8; 32];
-        hkdf
-            .expand(b"ZCP-session-key", &mut session_key)
+        hkdf.expand(b"ZCP-session-key", &mut session_key)
             .map_err(|_| Error::InvalidKeyLength)?;
 
         Ok(session_key)
@@ -218,11 +289,26 @@ mod tests {
     #[test]
     #[cfg(feature = "alloc")]
     fn pq_hybrid_kem_placeholder() {
-        // TODO: Add real KEM tests once implementation is complete
-        // - Test keygen produces valid keypairs
-        // - Test encapsulate/decapsulate roundtrip
-        // - Test hybrid KEM combination (X25519 || ML-KEM-768)
-        // - Test HKDF-SHA3-256 derivation
+        // Happy-path roundtrip
+        let (x_kp, ml_kp) = PqHybridKem::keygen().unwrap();
+        let context = b"ZCP-v0x01-KEM";
+
+        let enc = PqHybridKem::encapsulate(
+            &<[u8; 32]>::try_from(&x_kp.public_key[..]).unwrap(),
+            &ml_kp.public_key,
+            context,
+        )
+        .unwrap();
+
+        let session = PqHybridKem::decapsulate(
+            &<[u8; 32]>::try_from(&x_kp.secret_key[..]).unwrap(),
+            &ml_kp.secret_key,
+            &enc.encapsulated_key,
+            context,
+        )
+        .unwrap();
+
+        assert_eq!(session, enc.shared_secret);
     }
 
     #[test]

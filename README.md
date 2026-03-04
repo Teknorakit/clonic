@@ -1,10 +1,24 @@
-# clonic-core
+# clonic
+
+**Zone Coordination Protocol (ZCP)** — A residency-aware, post-quantum hybrid cryptography wire protocol for distributed IoT and edge computing.
 
 Wire protocol types and codec for the **Zone Coordination Protocol (ZCP)**.
 
-`clonic-core` defines the binary envelope format that every ZCP message uses on the wire. It is deliberately minimal: types, constants, encode, decode. No crypto, no transport, no business logic.
+`clonic` defines the binary envelope format that every ZCP message uses on the wire. It is deliberately minimal: types, constants, encode, decode. No crypto, no transport, no business logic.
 
 Think of it like the [`http`](https://crates.io/crates/http) crate: it defines `Request` and `Response` but doesn't open sockets. Networking stacks build on top.
+
+## The clonic Ecosystem
+
+`clonic` is a modular Rust workspace with focused, single-responsibility crates:
+
+| Crate | Purpose | Status |
+|-------|---------|--------|
+| **clonic-core** | Wire protocol types and codec (42-byte envelope, zero-copy parsing) | ✅ Stable |
+| **clonic-crypto** | Post-quantum hybrid (ML-KEM-768 + X25519) and classical (X25519) key encapsulation | 🔄 In progress |
+| **clonic-identity** | Device identity, provisioning, and certificate chains | 🔄 In progress |
+| **clonic-transport** | Transport abstraction layer (trait-based) | 🔄 In progress |
+| **clonic-transport-tcp** | TCP/IP implementation with async/await | 🔄 In progress |
 
 ## Why ZCP?
 
@@ -65,7 +79,7 @@ fn handle_frame(buf: &[u8]) {
 ### `alloc` — Owned envelopes (Linux, servers)
 
 ```rust
-use clonic_core::{Envelope, MsgType, CryptoSuite, ResidencyTag};
+use clonic::{Envelope, MsgType, CryptoSuite, ResidencyTag};
 
 let envelope = Envelope::new(
     MsgType::TaskRoute,
@@ -82,8 +96,8 @@ let wire_bytes = envelope.to_bytes();
 ### Transport framing
 
 ```rust
-use clonic_core::decode::peek_frame_length;
-use clonic_core::envelope::HEADER_SIZE;
+use clonic::decode::peek_frame_length;
+use clonic::envelope::HEADER_SIZE;
 
 // Step 1: read exactly 42 bytes from the wire
 let header_buf = read_exact(stream, HEADER_SIZE);
@@ -114,6 +128,20 @@ let env = clonic::EnvelopeRef::parse(&frame).unwrap();
 - **No transport** — no TCP, BLE, LoRa, libp2p. Transport-agnostic by design.
 - **No CRDT payloads** — the `payload` field is opaque bytes.
 - **No business logic** — no task scheduling, no routing decisions.
+
+## Design Principles
+
+- **Residency-aware**: Every envelope carries a 2-byte ISO 3166-1 residency zone tag, cryptographically authenticated.
+- **Post-quantum ready**: Suite 0x01 uses ML-KEM-768 + X25519 hybrid KEM; Suite 0x02 uses classical X25519.
+- **no_std first**: Core protocol works on bare-metal; optional `alloc` and `std` features for richer environments.
+- **Zero-copy parsing**: `EnvelopeRef` borrows from the wire buffer; no allocations required.
+- **Modular**: Each crate has a single responsibility; compose as needed.
+
+## Documentation
+
+- **[MANIFESTO.md](docs/MANIFESTO.md)** — Complete ZCP protocol specification
+- **[ROADMAP.md](ROADMAP.md)** — Development phases and milestones
+- **[clonic-core README](core/README.md)** — Wire protocol details and API reference
 
 ## License
 

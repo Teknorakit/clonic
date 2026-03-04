@@ -41,4 +41,4 @@ pub use suite::CryptoSuite;
 pub use suite::{KemOutput, SignatureOutput};
 
 #[cfg(feature = "alloc")]
-pub use kem::{KemKeypair, KemEncapsulation, PqHybridKem, ClassicalKem};
+pub use kem::{ClassicalKem, KemEncapsulation, KemKeypair, PqHybridKem};
