@@ -6,7 +6,7 @@
 //! - `0x10–0x1F`: DHT operations (Kademlia find/get/put)
 //! - `0x20–0x2F`: Gossip operations (broadcast, subscribe)
 //! - `0x30–0x3F`: Provisioning operations (device onboarding, revocation)
-//! - `0x40–0x4F`: Heartbeat / health (reserved)
+//! - `0x40–0x4F`: Heartbeat / health
 //! - `0xF0–0xFF`: Vendor extensions (reserved for third-party use)
 
 /// ZCP message types carried in the wire protocol envelope.
@@ -55,6 +55,13 @@ pub enum MsgType {
 
     /// Device revocation (any admin → fleet).
     ProvisionRevoke = 0x32,
+
+    // ── Heartbeat / health (0x40–0x4F) ─────────────────
+    /// Heartbeat ping (liveness probe).
+    HeartbeatPing = 0x40,
+
+    /// Heartbeat pong (response to ping).
+    HeartbeatPong = 0x41,
 }
 
 impl MsgType {
@@ -76,6 +83,8 @@ impl MsgType {
             0x30 => Some(MsgType::ProvisionRequest),
             0x31 => Some(MsgType::ProvisionCert),
             0x32 => Some(MsgType::ProvisionRevoke),
+            0x40 => Some(MsgType::HeartbeatPing),
+            0x41 => Some(MsgType::HeartbeatPong),
             _ => None,
         }
     }
@@ -141,6 +150,8 @@ mod tests {
             MsgType::ProvisionRequest,
             MsgType::ProvisionCert,
             MsgType::ProvisionRevoke,
+            MsgType::HeartbeatPing,
+            MsgType::HeartbeatPong,
         ];
         for v in variants {
             assert_eq!(
@@ -168,6 +179,8 @@ mod tests {
         assert_eq!(MsgType::ProvisionRequest.as_byte(), 0x30);
         assert_eq!(MsgType::ProvisionCert.as_byte(), 0x31);
         assert_eq!(MsgType::ProvisionRevoke.as_byte(), 0x32);
+        assert_eq!(MsgType::HeartbeatPing.as_byte(), 0x40);
+        assert_eq!(MsgType::HeartbeatPong.as_byte(), 0x41);
     }
 
     // ── Unknown bytes ────────────────────────────────────
@@ -265,5 +278,50 @@ mod tests {
             MsgType::range_of(MsgType::ProvisionRevoke.as_byte()),
             MsgRange::Provisioning
         );
+        assert_eq!(
+            MsgType::range_of(MsgType::HeartbeatPing.as_byte()),
+            MsgRange::Heartbeat
+        );
+        assert_eq!(
+            MsgType::range_of(MsgType::HeartbeatPong.as_byte()),
+            MsgRange::Heartbeat
+        );
+    }
+
+    // ── Proptest coverage for unknown-but-in-range message bytes ──
+
+    #[cfg(feature = "alloc")]
+    use proptest::prelude::*;
+
+    #[cfg(all(test, feature = "alloc"))]
+    proptest! {
+        #[test]
+        fn unknown_but_in_range_bytes_are_none_and_classified(u in 0u8..=0xFF) {
+            let known = [
+                0x01u8,0x02,0x03,
+                0x10,0x11,0x12,
+                0x20,0x21,
+                0x30,0x31,0x32,
+                0x40,0x41,
+            ];
+
+            let is_known = known.contains(&u);
+            let opt = MsgType::from_byte(u);
+
+            if is_known {
+                prop_assert!(opt.is_some());
+            } else {
+                prop_assert!(opt.is_none());
+                let range = MsgType::range_of(u);
+                // If in an allocated range, ensure classification matches range_of
+                if (0x01..=0x0F).contains(&u) { prop_assert_eq!(range, MsgRange::Core); }
+                else if (0x10..=0x1F).contains(&u) { prop_assert_eq!(range, MsgRange::Dht); }
+                else if (0x20..=0x2F).contains(&u) { prop_assert_eq!(range, MsgRange::Gossip); }
+                else if (0x30..=0x3F).contains(&u) { prop_assert_eq!(range, MsgRange::Provisioning); }
+                else if (0x40..=0x4F).contains(&u) { prop_assert_eq!(range, MsgRange::Heartbeat); }
+                else if (0xF0..=0xFF).contains(&u) { prop_assert_eq!(range, MsgRange::Vendor); }
+                else { prop_assert_eq!(range, MsgRange::Unknown); }
+            }
+        }
     }
 }

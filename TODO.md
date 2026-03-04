@@ -1,6 +1,19 @@
 # TODO
 
-Checklist derived from ROADMAP.md to drive implementation.
+Checklist for the `clonic` monorepo — the ZCP wire protocol, cryptography, identity, and transport layer.
+
+> **Scope boundary:** `clonic` is the shared vocabulary layer (like the `http` crate for Hyper).
+> It defines envelope format, crypto suites, device identity, transport abstractions, and zone routing primitives.
+> Higher-level concerns live in their own repos:
+>
+> | Responsibility | Repo | NOT clonic |
+> |---|---|---|
+> | CRDT sync, Raft consensus, gossip, fleet orchestration | [ZluidrOS](https://github.com/Zluidr/ZluidrOS) (`zluidr-sync`, `zluidr-raft`, `zluidr-zcp`) | ✗ |
+> | Edge firmware SDK, sensor HAL, offline buffer, board support | [ZluidrEdge SDK](https://github.com/Zluidr/zluidredge-sdk) (`edge-core`, `edge-transport`) | ✗ |
+> | Full OS daemon (`zcpd`), CLI/TUI, Alpine packaging | [ZluidrOS](https://github.com/Zluidr/ZluidrOS) (`zluidr-daemon`, `zluidr-cli`) | ✗ |
+> | GingerNet privacy tunnel (`gingerd`) | [ZluidrOS](https://github.com/Zluidr/ZluidrOS) (`gingerd/`) | ✗ |
+
+---
 
 ## Protocol Constraints (Must Respect)
 - ✅ Wire format: 42-byte header + variable payload + 16-byte MAC = 58 bytes overhead
@@ -12,206 +25,240 @@ Checklist derived from ROADMAP.md to drive implementation.
 - ✅ Crypto suites: 0x01 (PQ Hybrid), 0x02 (Classical)
 - ✅ Two-phase framing: read 42B header, peek length, read payload+MAC
 
-## Phase 1: Cryptography Foundation
-- [x] Create `clonic-crypto` crate (separate from `clonic-core` wire codec)
-- [x] Implement Suite 0x02 (Classical): X25519 KEM with HKDF-SHA3-256
-  - [x] X25519 keygen with OsRng CSPRNG
-  - [x] Encapsulate/decapsulate with HKDF-SHA3-256 key derivation
-  - [x] Input validation (context length bounds)
-  - [x] Secret key zeroization on drop
-- [ ] Implement Suite 0x01 (PQ Hybrid): ML-KEM-768 + X25519 KEM with HKDF-SHA3-256
-  - [x] Framework and input validation
-  - [ ] X25519 encapsulation/decapsulation
-  - [ ] ML-KEM-768 integration (requires pqcrypto or custom impl)
-  - [x] Hybrid KEM combiner with HKDF-SHA3-256
-- [ ] Implement Suite 0x01 signatures: ML-DSA-65 + Ed25519
-- [ ] Implement Suite 0x02 signatures: Ed25519
-- [ ] Implement AES-256-GCM with per-message HKDF-SHA3-256-derived keys (both suites)
-- [x] Add crypto-agility framework (suite registry, algorithm rotation)
-- [ ] Write crypto KATs (known-answer tests) and cross-implementation validation
-- [ ] Document suite selection guidelines (PQ Hybrid for nodes, Classical for edge)
+---
 
-- [x] Create `clonic-identity` crate
-- [ ] Design offline-capable certificate chain (root → server → device, trust decay)
-- [x] Implement Ed25519-based device identity (32-byte public key = sender_device_id)
-- [x] Implement provisioning messages: REQUEST (0x30), CERT (0x31), REVOKE (0x32)
-- [ ] Build certificate validation with trust decay by depth
-- [ ] Implement key rotation mechanism
-- [ ] Add secure key storage abstraction (filesystem, TPM, secure enclave)
-- [ ] Build provisioning CLI tool for device onboarding
+## `clonic-core` — Wire Codec (v0.1.2, published to crates.io)
+
+### Complete ✅
+- [x] 42-byte ZCP envelope with residency tag at offset 36
+- [x] `EnvelopeRef` — zero-copy parser for `no_std` / bare-metal
+- [x] `Envelope` — owned builder type (requires `alloc`)
+- [x] `encode_to_slice` / `encode_to_vec`
+- [x] `peek_frame_length` — two-phase transport framing
+- [x] `ResidencyTag` — ISO 3166-1 numeric with extension bit
+- [x] `MsgType` — 11 types across 6 ranges, `MsgRange` classification
+- [x] `CryptoSuite` — PQ Hybrid (0x01) + Classical (0x02) identifiers
+- [x] `Flags` — compressed, fragmented, reserved-bit detection
+- [x] `Version` — V1 (0x01)
+- [x] Feature flags: `alloc`, `std`, `serde`
+- [x] 93 tests (73 unit + 20 proptest roundtrips)
+- [x] CI: `no_std` cross-compile (thumbv7em, riscv32imc), musl, clippy, docs
+- [x] docs.rs metadata fix (v0.1.2)
+
+### Remaining
+- [x] Add Heartbeat message types (0x40–0x4F range)
+- [x] Consider adding `payload_max` const and validation in `encode_to_slice`
+- [x] Extend proptest coverage to fuzz unknown-but-in-range message types
+
+---
+
+## `clonic-crypto` — Cryptography (v0.1.2, scaffold)
+
+### Complete ✅
+- [x] Crate scaffold with `no_std` support
+- [x] `CryptoSuite` enum with `from_byte`/`as_byte`/`name`/`recommended_for`
+- [x] Suite 0x02 (Classical) KEM — X25519 keygen (`OsRng` CSPRNG)
+- [x] Suite 0x02 (Classical) KEM — encapsulate (ephemeral X25519 + HKDF-SHA3-256)
+- [x] Suite 0x02 (Classical) KEM — decapsulate (X25519 DH + HKDF-SHA3-256)
+- [x] Input validation (context length bounds, encapsulated key length)
+- [x] Secret key zeroization on drop (`zeroize` crate)
+- [x] Hybrid KEM combiner function (`hybrid_kem_combine` via HKDF-SHA3-256)
+
+### Stubbed (framework exists, implementation returns placeholder errors)
+- [ ] Suite 0x01 (PQ Hybrid) KEM — `PqHybridKem::keygen()` → returns `Err(BufferTooSmall)`
+- [ ] Suite 0x01 (PQ Hybrid) KEM — `PqHybridKem::encapsulate()` → input validation only, no actual encapsulation
+- [ ] Suite 0x01 (PQ Hybrid) KEM — `PqHybridKem::decapsulate()` → returns `Err(BufferTooSmall)`
+- [ ] `derive_symmetric_key()` in `suite.rs` → copies shared_secret verbatim (no actual HKDF)
+
+### Not Started
+- [ ] Suite 0x01 PQ Hybrid: integrate ML-KEM-768 (evaluate `pqcrypto` vs `ml-kem` crate)
+- [ ] Suite 0x01 signatures: ML-DSA-65 + Ed25519 hybrid
+- [ ] Suite 0x02 signatures: Ed25519 sign/verify
+- [ ] AES-256-GCM encrypt/decrypt with per-message HKDF-SHA3-256-derived keys
+- [ ] Header-as-AAD: encrypt payload with header bytes as GCM additional authenticated data
+- [ ] Crypto KATs (known-answer tests) for X25519, HKDF, AES-256-GCM
+- [ ] Cross-implementation validation (test vectors from NIST / RFC 7748 / RFC 7539)
+- [ ] Fix `derive_symmetric_key` to use actual HKDF-SHA3-256 derivation
+- [ ] Real tests for Classical KEM encapsulate/decapsulate roundtrip (currently placeholder `#[test]` with empty body)
+- [ ] Document suite selection guidelines
+
+---
+
+## `clonic-identity` — Device Identity & Provisioning (v0.1.2, scaffold)
+
+### Complete ✅
+- [x] Crate scaffold with `no_std` support
+- [x] `DeviceIdentity` — 32-byte Ed25519 public key wrapper
+- [x] `ProvisioningMessageType` — REQUEST (0x30), CERT (0x31), REVOKE (0x32)
+- [x] `ProvisioningMessage` — payload struct with chain depth + trust decay validation
+- [x] Basic trust decay validation (`chain_depth <= max_depth`)
+
+### Not Started
+- [ ] Offline-capable certificate chain format (root → server → device)
+- [ ] Certificate serialization/deserialization (wire format for CERT payloads)
+- [ ] Ed25519 signature generation and verification for certificates
+- [ ] Trust decay scoring by depth (not just boolean validation)
+- [ ] Certificate revocation list (CRL) format and checking
+- [ ] Key rotation mechanism (signed rotation certificates)
+- [ ] Secure key storage abstraction trait (filesystem, TPM, secure enclave backends)
+- [ ] `edge-provision-cli` tool for device onboarding (or move to ZluidrEdge SDK)
 - [ ] Document provisioning workflow and security model
 
-## Phase 2: Transport Layer
-- [x] Create `clonic-transport` crate (core abstractions)
-- [ ] Define `Transport` trait (send, recv, framing, error handling)
-- [x] Implement two-phase framing (1: read 42B, 2: peek_frame_length, 3: read payload+MAC)
-- [ ] Add connection lifecycle management (connect, disconnect, reconnect)
-- [ ] Define transport-specific configuration (TCP ports, BLE UUIDs, LoRa params)
-- [ ] Create transport registry for multi-transport nodes
-- [ ] Write transport adapter tests
+---
 
-- [x] Create `clonic-transport-tcp` crate
-- [ ] Implement TCP transport with async/await (tokio)
-- [ ] Add TLS wrapper for encrypted TCP channels
-- [ ] Implement connection pooling and keepalive
-- [ ] Add backpressure and flow control
-- [ ] Write TCP-specific benchmarks (throughput, latency)
-- [ ] Test on Linux, macOS, Windows
+## `clonic-transport` — Transport Abstraction (v0.1.2, scaffold)
 
-- [ ] Create `clonic-transport-ble` crate (GATT characteristics for ZCP frames)
-- [ ] Create `clonic-transport-lora` crate (LoRaWAN adapter)
-- [ ] Implement WiFi Direct transport
-- [ ] Add USB serial transport for development/debugging
-- [ ] Test on ESP32, nRF52, STM32 targets
-- [ ] Document transport selection matrix (range, power, bandwidth)
+### Complete ✅
+- [x] Crate scaffold with `no_std` support
+- [x] `TransportFraming::peek_frame_length` — extract payload length from 42B header
+- [x] `TransportFraming::validate_frame_size`
+- [x] Framing constants (`HEADER_SIZE`, `MAC_SIZE`, `MIN_FRAME_SIZE`)
+- [x] Error types for transport operations
 
-## Phase 3: Zone Enforcement Routing
+### Not Started
+- [ ] Define `Transport` trait (`send`, `recv`, `connect`, `disconnect`, error handling)
+- [ ] Connection lifecycle management (reconnect, backoff)
+- [ ] Transport-specific configuration types (TCP port, BLE UUID, LoRa params)
+- [ ] Transport registry / selector for multi-transport nodes
+- [ ] Transport adapter test harness (mock transport for unit testing)
+
+---
+
+## `clonic-transport-tcp` — TCP Transport (v0.1.2, empty scaffold)
+
+### Complete ✅
+- [x] Crate scaffold with tokio dependency
+
+### Stubbed
+- [ ] `TcpTransport` — currently an empty struct with no functionality
+
+### Not Started
+- [ ] Implement `Transport` trait for TCP (async, tokio-based)
+- [ ] Two-phase framing over TCP streams (read 42B → peek → read remainder)
+- [ ] TLS wrapper (rustls or native-tls)
+- [ ] Connection pooling and keepalive
+- [ ] Backpressure and flow control
+- [ ] TCP-specific benchmarks (throughput, latency)
+- [ ] Cross-platform testing (Linux, macOS, Windows)
+
+---
+
+## `clonic-router` — Zone Enforcement Routing (not yet created)
+
+> This crate belongs in clonic — it's the enforcement layer for the residency tag that clonic defines.
+
 - [ ] Create `clonic-router` crate
-- [ ] Implement peer registry (device_id → zone)
-- [ ] Enforce zone validation per hop with policy engine (allow/deny)
-- [ ] Add zone-aware routing table and multi-hop forwarding
-- [ ] Add violation logging, sender notification, Prometheus metrics
-- [ ] Provide zone config format + ISO registry, sub-national support
-- [ ] Build zone policy CLI and audit logging
+- [ ] Peer registry (device_id → zone mapping)
+- [ ] Zone validation per hop (extract tag, check destination, enforce)
+- [ ] Routing policy engine (allowlists, denylists, cross-border agreements)
+- [ ] Zone-aware routing table and path selection
+- [ ] Violation logging and sender notification
+- [ ] Zone configuration format (TOML)
+- [ ] ISO 3166-1 zone registry with sub-national support (extension bit)
+- [ ] Prometheus metrics for zone violations
+- [ ] Zone policy CLI tool
+- [ ] Zone audit logging (all forwarding decisions)
 
-## Phase 4: CRDT Synchronization
-- [ ] Create `clonic-crdt` crate
-- [ ] Implement LWW-Register (last-write-wins)
-- [ ] Implement OR-Set (observed-remove set)
-- [ ] Implement PN-Counter (positive-negative counter)
-- [ ] Implement RGA (replicated growable array) for text
-- [ ] Add vector clock / hybrid logical clock for causality
-- [ ] Implement CRDT merge operations with conflict resolution
-- [ ] Write CRDT convergence tests (concurrent updates, partition healing)
+---
 
-- [ ] Create `clonic-sync` crate (sync engine)
-- [ ] Design SYNC_CRDT (0x02) message payload format
-- [ ] Implement delta-state synchronization
-- [ ] Add Reed-Solomon erasure coding (k=4 of n=6, 4KB chunks)
-- [ ] Build partial transfer recovery (reconstruct from k-of-n chunks)
-- [ ] Implement zone-aware sync (partition operations by zone)
-- [ ] Add sync scheduling (periodic, on-reconnect, on-demand)
-- [ ] Create sync conflict resolution strategies
-- [ ] Write sync tests (offline operation, reconnect convergence)
+## Cross-Cutting Concerns
 
-## Phase 5: Task Routing & Orchestration
-- [ ] Create `clonic-tasks` crate (task routing engine)
-- [ ] Design TASK_ROUTE (0x01) message payload format
-- [ ] Implement intent specification language (capabilities, constraints)
-- [ ] Build device capability registry
-- [ ] Create task routing algorithm (capability matching, load balancing)
-- [ ] Add zone-aware task routing (respect residency constraints)
-- [ ] Implement task lifecycle (pending, assigned, executing, completed, failed)
-- [ ] Add task result collection and aggregation
-- [ ] Write task routing tests
-
-- [ ] Create `clonic-orch` crate (orchestration layer)
-- [ ] Implement Raft consensus for critical operations
-- [ ] Add leader election with zone awareness
-- [ ] Build gossip protocol for lightweight state sharing
-- [ ] Implement device health monitoring (heartbeat messages 0x40-0x4F)
-- [ ] Create fleet topology discovery
-- [ ] Add device role management (leader, follower, observer)
-- [ ] Write orchestration tests (leader failover, network partition)
-
-## Phase 6: Integration
-- [ ] Build `clonic-node` binary (config, CLI, REST API, structured logging)
-- [ ] Integrate crypto, transport, routing, sync, tasks
-- [ ] Add systemd unit and deployment guide
-- [ ] Build `clonic-edge` SDK (Classical suite, minimal routing/CRDT)
-- [ ] Provide example firmware (ESP32-C3, nRF52) and footprint measurements
-
-## Phase 7: Testing & Validation
-- [ ] Build multi-node test harness (Docker Compose)
-- [ ] Write cross-zone routing tests (enforcement validation)
-- [ ] Test offline-first sync (disconnect, operate, reconnect)
-- [ ] Validate CRDT convergence (concurrent updates, partition healing)
-- [ ] Test task routing across heterogeneous fleet
-- [ ] Simulate network partitions and healing
-- [ ] Test crypto suite interoperability (PQ Hybrid ↔ Classical)
-- [ ] Run long-duration stability tests (7+ days)
-
+### Testing
+- [ ] Fuzz envelope parser (extend proptest with AFL/libFuzzer)
+- [ ] Crypto KATs and cross-implementation validation
+- [ ] Transport framing fuzz tests
+- [ ] Zone enforcement bypass attempt tests
+- [ ] Replay attack resistance tests
+- [ ] MAC authentication tamper detection tests
+- [ ] Key rotation procedure tests
 - [ ] Benchmark envelope encode/decode (target: <100ms on ESP32)
-- [ ] Measure crypto overhead (PQ Hybrid vs Classical)
-- [ ] Test routing throughput (messages/sec per node)
-- [ ] Benchmark CRDT merge performance
-- [ ] Measure sync bandwidth efficiency (target: <5% overhead with erasure coding)
-- [ ] Profile memory usage (node vs edge)
-- [ ] Test scalability (2 → 200 devices, target: <1s task routing)
-- [ ] Document performance characteristics
+- [ ] Benchmark crypto overhead (PQ Hybrid vs Classical)
+- [ ] Profile memory usage per crate
 
-- [ ] Conduct threat modeling (STRIDE analysis)
-- [ ] Test zone enforcement bypass attempts
-- [ ] Validate crypto implementation (known-answer tests)
-- [ ] Extend existing envelope fuzzing (AFL, libFuzzer on top of proptest)
-- [ ] Test replay attack resistance
-- [ ] Validate MAC authentication (tamper detection)
-- [ ] Test key rotation procedures
-- [ ] Conduct penetration testing
+### Documentation
+- [ ] RFC-style protocol specification (standalone, not just manifesto)
+- [ ] Full rustdoc for all public APIs across all crates
+- [ ] Suite selection guidelines document
+- [ ] Zone configuration cookbook
+- [ ] Transport implementation guide (how to add a new transport)
+- [ ] Provisioning workflow guide
+- [ ] Wireshark dissector for ZCP envelopes (`zcpctl` or standalone)
 
-## Phase 8: Documentation & Tooling
-- [ ] Write RFC-style protocol spec and full rustdoc
-- [ ] Integration guides, tutorials, troubleshooting, zone cookbook
-- [ ] Build example apps (e.g., warehouse IoT, healthcare sync)
-- [ ] Build `zcpctl` CLI, packet dissector, zone validator, cert manager
-- [ ] Add Prometheus exporter + Grafana dashboards + runbooks
-
-## Phase 9: Compliance & Security Audit
-- [ ] Map ZCP to Indonesia PP 71/2019 + GR 82/2012 requirements
+### Compliance & Security Audit
+- [ ] Map ZCP wire format to Indonesia PP 71/2019 + GR 82/2012 requirements
 - [ ] Validate GDPR Article 44-49 alignment (EU cross-border transfers)
-- [ ] Test India DPDP Act 2023 compliance
+- [ ] Document India DPDP Act 2023 compliance model
 - [ ] Document Vietnam Decree 13/2023 alignment
-- [ ] Review ASEAN Digital Data Governance Framework alignment
-- [ ] Create compliance audit trail format
-- [ ] Write compliance certification guide
-- [ ] Engage legal review (data sovereignty experts)
-
-- [ ] Engage cryptography audit firm (Trail of Bits, NCC Group)
-- [ ] Conduct code audit (all crypto, routing, identity code)
-- [ ] Perform protocol analysis (formal verification if possible)
-- [ ] Test post-quantum crypto implementation
-- [ ] Validate zone enforcement guarantees
-- [ ] Review key management procedures
-- [ ] Address audit findings
+- [ ] ASEAN Digital Data Governance Framework alignment
+- [ ] Engage cryptography audit firm (Trail of Bits, NCC Group) for `clonic-crypto`
+- [ ] Code audit: all crypto, routing, and identity code
+- [ ] Protocol formal verification (if feasible)
 - [ ] Publish audit report
 
-## Phase 10: Production Deployment
-- [ ] Publish Kubernetes manifests + Helm charts
-- [ ] Provide Terraform modules (AWS/GCP/Azure)
-- [ ] Implement zero-downtime rollout + backup/DR procedures
-- [ ] Add monitoring/alerting and incident response playbooks
+### Release
+- [ ] Freeze wire protocol v0x01 format
+- [ ] Publish all crates to crates.io (currently only `clonic-core`)
+- [ ] Tag v1.0.0 releases
+- [ ] Submit IETF RFC for ZCP wire format
+- [ ] Language bindings: Python, Go, C (for third-party adoption)
 
-## Phase 11: Release & Ecosystem
-- [ ] Freeze wire protocol v0x01 and publish v1.0 crates
-- [ ] Publish security audit report and release announcement
-- [ ] Submit IETF RFC; conference talks
-- [ ] Build community (org, chat), governance, contributor guide
-- [ ] Language bindings (Python/Go/C) and platform integrations
-- [ ] Certification program and developer summit
+---
 
-## Success Criteria (from ROADMAP.md)
-**Technical:**
-- [ ] 100% zone enforcement (zero bypass in testing)
-- [ ] <100ms envelope encode/decode on ESP32
-- [ ] 99.99% CRDT convergence in partition tests
-- [ ] <5% bandwidth overhead from erasure coding
-- [ ] Support 200+ device fleet with <1s task routing
+## Explicitly OUT OF SCOPE for clonic
+
+These items were in the previous TODO but belong in other repos:
+
+| Item | Belongs In | Why |
+|---|---|---|
+| CRDT types (LWW-Register, OR-Set, PN-Counter, RGA) | ZluidrOS `zluidr-sync` | Coordination logic, not wire format |
+| CRDT sync engine + erasure coding | ZluidrOS `zluidr-sync` | State replication above protocol layer |
+| Raft consensus | ZluidrOS `zluidr-raft` | Consensus above protocol layer |
+| Gossip protocol | ZluidrOS `zluidr-zcp` | Coordination above protocol layer |
+| Task routing + intent language | ZluidrOS `zluidr-zcp` | Application-layer orchestration |
+| Fleet device orchestration | ZluidrOS `zluidr-zcp` | Application-layer orchestration |
+| Device health monitoring / heartbeat logic | ZluidrOS `zluidr-daemon` | clonic defines the msg type range; OS implements logic |
+| `clonic-node` full binary | ZluidrOS `zluidr-daemon` (`zcpd`) | OS binary, not protocol library |
+| `clonic-edge` SDK | [ZluidrEdge SDK](https://github.com/Zluidr/zluidredge-sdk) | Separate repo with own ADRs and architecture |
+| Edge firmware examples (ESP32-C3, nRF52) | ZluidrEdge SDK `examples/` | Hardware-specific, not protocol |
+| BLE transport for edge devices | ZluidrEdge SDK `edge-transport` | Edge-specific transport wrappers |
+| LoRa transport for edge devices | ZluidrEdge SDK `edge-transport` | Edge-specific transport wrappers |
+| Kubernetes / Helm / Terraform deployment | ZluidrOS `alpine/` | Infrastructure, not protocol |
+| Pilot deployment | TeknoRakit operations | Business execution, not code |
+
+> **Integration point:** ZluidrOS and ZluidrEdge SDK both depend on `clonic-core` (and eventually `clonic-crypto`, `clonic-identity`, `clonic-transport`) as upstream crates. The dependency flows one way: clonic → consumers. clonic never depends on ZluidrOS or ZluidrEdge SDK.
+
+---
+
+## Success Criteria (scoped to clonic)
+
+**Wire Protocol:**
+- [ ] 100% zone enforcement at routing layer (zero bypass in `clonic-router` tests)
+- [ ] <100μs envelope encode/decode on x86_64 (benchmark)
+- [ ] <100ms envelope encode/decode on ESP32 (via ZluidrEdge SDK integration test)
+- [ ] Zero known cryptographic vulnerabilities in `clonic-crypto`
 
 **Adoption:**
-- [ ] 3+ pilot deployments in different verticals
-- [ ] 10+ third-party implementations
-- [ ] 1000+ GitHub stars
-- [ ] Accepted as IETF RFC
+- [ ] All crates published to crates.io
+- [ ] 3+ downstream consumers (ZluidrOS, ZluidrEdge SDK, at least one third-party)
+- [ ] Accepted as IETF RFC (wire format specification)
 
 **Compliance:**
-- [ ] Pass third-party security audit
-- [ ] Validated compliance in 3+ jurisdictions
-- [ ] Zero residency violations in production
+- [ ] Pass third-party crypto audit
+- [ ] Validated regulatory alignment documentation for 3+ jurisdictions
+
+---
 
 ## Next Immediate Actions
-- [ ] Confirm scope for current cycle (phases to execute)
-- [ ] Assemble team (Rust, embedded, security, DevOps, docs, compliance)
-- [ ] Provision test hardware (ESP32, nRF52, Raspberry Pi fleet)
-- [ ] Secure cloud resources (AWS/GCP for integration testing)
-- [ ] Kick off `clonic-crypto` implementation (Phase 1.1)
-- [ ] Select pilot vertical for deployment (healthcare, warehouse, or government)
+1. [ ] Complete Classical KEM roundtrip tests (encapsulate → decapsulate, verify shared secret matches)
+2. [ ] Fix `derive_symmetric_key` stub in `suite.rs` to use actual HKDF-SHA3-256
+3. [ ] Implement AES-256-GCM encrypt/decrypt with header-as-AAD
+4. [ ] Implement Ed25519 signatures (Suite 0x02)
+5. [ ] Evaluate ML-KEM-768 crate options (`pqcrypto` vs `ml-kem`) for Suite 0x01
+6. [ ] Define `Transport` trait in `clonic-transport`
+7. [ ] Implement basic TCP transport (connect, send frame, recv frame)
+
+---
+
+*Document Version: 2.0*
+*Last Updated: March 3, 2026*
+*Status: Active — aligned with three-repo architecture*

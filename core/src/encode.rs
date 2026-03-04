@@ -16,6 +16,9 @@ use crate::msg_type::MsgType;
 use crate::residency::ResidencyTag;
 use crate::version::Version;
 
+/// Maximum payload size supported by the wire format (u32::MAX bytes).
+pub const PAYLOAD_MAX: usize = u32::MAX as usize;
+
 /// Parameters for encoding a single ZCP envelope.
 ///
 /// This is a "view" struct — it borrows the payload and device ID rather
@@ -51,7 +54,7 @@ pub struct EnvelopeFields<'a> {
 pub fn encode_to_slice(fields: &EnvelopeFields<'_>, dst: &mut [u8]) -> Result<usize, Error> {
     let payload_len = fields.payload.len();
 
-    if payload_len > u32::MAX as usize {
+    if payload_len > PAYLOAD_MAX {
         return Err(Error::PayloadTooLarge(payload_len));
     }
 

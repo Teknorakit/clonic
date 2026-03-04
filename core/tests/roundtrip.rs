@@ -361,7 +361,7 @@ mod tests {
 
     #[test]
     fn msg_type_ranges() {
-        use clonic::msg_type::MsgRange;
+        use clonic_core::msg_type::MsgRange;
 
         assert_eq!(MsgType::range_of(0x01), MsgRange::Core);
         assert_eq!(MsgType::range_of(0x0F), MsgRange::Core);
@@ -380,8 +380,10 @@ mod tests {
 mod proptest_roundtrip {
     extern crate alloc;
 
-    use clonic::envelope::Flags;
-    use clonic::*;
+    use clonic_core::envelope::Flags;
+    use clonic_core::msg_type::MsgType;
+    use clonic_core::{CryptoSuite, Envelope, ResidencyTag, Version};
+    use alloc::vec::Vec;
     use proptest::prelude::*;
 
     fn arb_msg_type() -> impl Strategy<Value = MsgType> {
@@ -424,7 +426,7 @@ mod proptest_roundtrip {
                 crypto_suite,
                 device_id,
                 residency,
-                payload.clone(),
+                Vec::from(payload.clone()),
                 mac,
             ).with_flags(Flags::from_byte(flags_byte));
 
