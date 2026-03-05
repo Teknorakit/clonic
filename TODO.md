@@ -71,14 +71,13 @@ Checklist for the `clonic` monorepo — the ZCP wire protocol, cryptography, ide
 - [x] `derive_symmetric_key()` in `suite.rs` → HKDF-SHA3-256 key derivation
 
 ### Not Started
-- [ ] Suite 0x01 PQ Hybrid: integrate ML-KEM-768 (evaluate `pqcrypto` vs `ml-kem` crate)
+-- [x] Suite 0x01 PQ Hybrid: integrate ML-KEM-768 (`pqcrypto::kem::kyber768` in PqHybridKem)
 - [ ] Suite 0x01 signatures: ML-DSA-65 + Ed25519 hybrid
 - [ ] Suite 0x02 signatures: Ed25519 sign/verify
 - [ ] AES-256-GCM encrypt/decrypt with per-message HKDF-SHA3-256-derived keys
 - [ ] Header-as-AAD: encrypt payload with header bytes as GCM additional authenticated data
 - [ ] Crypto KATs (known-answer tests) for X25519, HKDF, AES-256-GCM
 - [ ] Cross-implementation validation (test vectors from NIST / RFC 7748 / RFC 7539)
-- [ ] Fix `derive_symmetric_key` to use actual HKDF-SHA3-256 derivation
 - [ ] Real tests for Classical KEM encapsulate/decapsulate roundtrip (currently placeholder `#[test]` with empty body)
 - [ ] Document suite selection guidelines
 
