@@ -313,10 +313,22 @@ mod tests {
 
     #[test]
     #[cfg(feature = "alloc")]
-    fn classical_kem_placeholder() {
-        // TODO: Add real KEM tests once implementation is complete
-        // - Test keygen produces valid X25519 keypair
-        // - Test encapsulate/decapsulate roundtrip
-        // - Test HKDF-SHA3-256 derivation
+    fn classical_kem_roundtrip() {
+        let kp = ClassicalKem::keygen().unwrap();
+        let context = b"ZCP-v0x02-KEM";
+
+        let enc = ClassicalKem::encapsulate(
+            &<[u8; 32]>::try_from(kp.public_key.as_slice()).unwrap(),
+            context,
+        )
+        .unwrap();
+        let dec = ClassicalKem::decapsulate(
+            &<[u8; 32]>::try_from(kp.secret_key.as_slice()).unwrap(),
+            &enc.encapsulated_key,
+            context,
+        )
+        .unwrap();
+
+        assert_eq!(dec, enc.shared_secret);
     }
 }

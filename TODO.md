@@ -77,9 +77,9 @@ Checklist for the `clonic` monorepo — the ZCP wire protocol, cryptography, ide
 - [x] AES-256-GCM encrypt/decrypt with per-message HKDF-SHA3-256-derived keys
 - [x] Header-as-AAD: encrypt payload with header bytes as GCM additional authenticated data
 - [x] Crypto KATs (known-answer tests) for X25519, HKDF, AES-256-GCM
-- [ ] Cross-implementation validation (test vectors from NIST / RFC 7748 / RFC 7539)
-- [ ] Real tests for Classical KEM encapsulate/decapsulate roundtrip (currently placeholder `#[test]` with empty body)
-- [ ] Document suite selection guidelines
+- [x] Cross-implementation validation (test vectors from NIST / RFC 7748 / RFC 7539)
+- [x] Real tests for Classical KEM encapsulate/decapsulate roundtrip (currently placeholder `#[test]` with empty body)
+- [x] Document suite selection guidelines
 
 ---
 

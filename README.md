@@ -137,6 +137,22 @@ let env = clonic::EnvelopeRef::parse(&frame).unwrap();
 - **Zero-copy parsing**: `EnvelopeRef` borrows from the wire buffer; no allocations required.
 - **Modular**: Each crate has a single responsibility; compose as needed.
 
+## Suite Selection Guidelines
+
+- **Suite 0x01 — PQ Hybrid (ML-KEM-768 + X25519, ML-DSA-65 + Ed25519)**
+  - Use when you need post-quantum resistance today or must hedge against future adversaries.
+  - Preferred for servers, gateways, and modern hardware that can afford larger keys/ciphertexts.
+  - Slightly larger envelope footprint due to hybrid KEM and dual signature.
+
+- **Suite 0x02 — Classical (X25519, Ed25519)**
+  - Use on constrained devices where size and CPU are tighter and PQ risk tolerance is acceptable for the deployment horizon.
+  - Smaller keys/ciphertexts and faster operations; minimal envelope overhead.
+
+- **General guidance**
+  - Keep suite consistent per deployment domain to simplify validation and tooling.
+  - Bind a clear domain separation context for HKDF (already enforced in KEM/sign code).
+  - Budget for payload + MAC size when setting transport frame limits (PQ suite is larger).
+
 ## Documentation
 
 - **[MANIFESTO.md](docs/MANIFESTO.md)** — Complete ZCP protocol specification
