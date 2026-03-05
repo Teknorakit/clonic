@@ -74,7 +74,7 @@ Checklist for the `clonic` monorepo — the ZCP wire protocol, cryptography, ide
 - [x] Suite 0x01 PQ Hybrid: integrate ML-KEM-768 (`pqcrypto::kem::kyber768` in PqHybridKem)
 - [x] Suite 0x01 signatures: ML-DSA-65 + Ed25519 hybrid (Ed25519 implemented; ML-DSA-65 pending pqcrypto sign module)
 - [x] Suite 0x02 signatures: Ed25519 sign/verify
-- [ ] AES-256-GCM encrypt/decrypt with per-message HKDF-SHA3-256-derived keys
+- [x] AES-256-GCM encrypt/decrypt with per-message HKDF-SHA3-256-derived keys
 - [ ] Header-as-AAD: encrypt payload with header bytes as GCM additional authenticated data
 - [ ] Crypto KATs (known-answer tests) for X25519, HKDF, AES-256-GCM
 - [ ] Cross-implementation validation (test vectors from NIST / RFC 7748 / RFC 7539)
