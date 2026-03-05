@@ -65,10 +65,10 @@ Checklist for the `clonic` monorepo — the ZCP wire protocol, cryptography, ide
 - [x] Hybrid KEM combiner function (`hybrid_kem_combine` via HKDF-SHA3-256)
 
 ### Stubbed (framework exists, implementation returns placeholder errors)
-- [ ] Suite 0x01 (PQ Hybrid) KEM — `PqHybridKem::keygen()` → returns `Err(BufferTooSmall)`
-- [ ] Suite 0x01 (PQ Hybrid) KEM — `PqHybridKem::encapsulate()` → input validation only, no actual encapsulation
-- [ ] Suite 0x01 (PQ Hybrid) KEM — `PqHybridKem::decapsulate()` → returns `Err(BufferTooSmall)`
-- [ ] `derive_symmetric_key()` in `suite.rs` → copies shared_secret verbatim (no actual HKDF)
+- [x] Suite 0x01 (PQ Hybrid) KEM — `PqHybridKem::keygen()` → ML-KEM-768 + X25519 with OsRng
+- [x] Suite 0x01 (PQ Hybrid) KEM — `PqHybridKem::encapsulate()` → full hybrid encapsulation with HKDF-SHA3-256
+- [x] Suite 0x01 (PQ Hybrid) KEM — `PqHybridKem::decapsulate()` → full hybrid decapsulation with HKDF-SHA3-256
+- [x] `derive_symmetric_key()` in `suite.rs` → HKDF-SHA3-256 key derivation
 
 ### Not Started
 - [ ] Suite 0x01 PQ Hybrid: integrate ML-KEM-768 (evaluate `pqcrypto` vs `ml-kem` crate)
