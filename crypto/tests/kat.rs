@@ -69,18 +69,28 @@ fn hkdf_sha3_256_test_vector() {
 }
 
 #[test]
-fn aes_256_gcm_nist_test_vector() {
-    // AES-256-GCM test vector with known key/nonce/plaintext
-    // Pinned output from this implementation for regression testing
-    let key = hex::decode("c3d99825f2181f4808acd2068eac7441a65bd428f14d2aab43fefc0129091139")
-        .unwrap();
-    let nonce = hex::decode("cafabd9672ca6c79a2fbdc22").unwrap();
-    let aad = hex::decode("").unwrap(); // empty AAD
-    let plaintext = hex::decode("").unwrap(); // empty plaintext
-    let expected_ct = hex::decode("cacec2946db3683fba22d11f3da0bba6").unwrap(); // tag only (computed)
+fn aes_256_gcm_nist_sp800_38d_vector() {
+    // NIST SP 800-38D AES-256-GCM test vector (cross-implementation)
+    // Key, IV, AAD, PT, CT, TAG from the specification (GCM-AES256 test case)
+    let key = hex::decode(
+        "feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308",
+    )
+    .unwrap();
+    let nonce = hex::decode("cafebabefacedbaddecaf888").unwrap();
+    let aad = hex::decode("feedfacedeadbeeffeedfacedeadbeefabaddad2").unwrap();
+    let plaintext = hex::decode(
+        "d9313225f88406e5a55909c5aff5269a86a7a9531534f7da2e4c303d8a318a72\
+         1c3c0c95956809532fcf0e2449a6b525b16aedf5aa0de657ba637b39",
+    )
+    .unwrap();
+    // Expected is ciphertext || tag (matches SP800-38D test case values)
+    let expected_ct = hex::decode(
+        "522dc1f099567d07f47f37a32a84427d643a8cdcbfe5c0c97598a2bd2555d1a\
+         a8cb08e48590dbb3da7b08b1056828838c5f61e6393ba7a0abcc9f66276fc6e\
+         ce0f4e1768cddf8853bb2d551b",
+    )
+    .unwrap();
 
-    // For this test, we use the raw key directly (not HKDF-derived)
-    // So we'll use aes_gcm directly
     use aes_gcm::aead::{Aead, KeyInit, Payload};
     use aes_gcm::{Aes256Gcm, Nonce};
 
