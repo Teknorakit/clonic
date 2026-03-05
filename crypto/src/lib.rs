@@ -50,3 +50,5 @@ pub use kem::{ClassicalKem, KemEncapsulation, KemKeypair, PqHybridKem};
 pub use sign::{ClassicalSigKeypair, HybridSigKeypair};
 #[cfg(feature = "alloc")]
 pub use aead::{decrypt, encrypt};
+#[cfg(feature = "alloc")]
+pub use aead::{decrypt_with_header_aad, encrypt_with_header_aad};
