@@ -33,6 +33,8 @@ pub mod suite;
 
 #[cfg(feature = "alloc")]
 pub mod kem;
+#[cfg(feature = "alloc")]
+pub mod sign;
 
 pub use error::Error;
 pub use suite::CryptoSuite;
@@ -42,3 +44,5 @@ pub use suite::{KemOutput, SignatureOutput};
 
 #[cfg(feature = "alloc")]
 pub use kem::{ClassicalKem, KemEncapsulation, KemKeypair, PqHybridKem};
+#[cfg(feature = "alloc")]
+pub use sign::{ClassicalSigKeypair, HybridSigKeypair};
