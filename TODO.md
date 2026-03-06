@@ -97,11 +97,11 @@ Checklist for the `clonic` monorepo — the ZCP wire protocol, cryptography, ide
 - [x] Certificate serialization/deserialization (wire format for CERT payloads)
 - [x] Ed25519 signature generation and verification for certificates
 - [x] Trust decay scoring by depth (not just boolean validation)
-- [ ] Certificate revocation list (CRL) format and checking
-- [ ] Key rotation mechanism (signed rotation certificates)
-- [ ] Secure key storage abstraction trait (filesystem, TPM, secure enclave backends)
-- [ ] `edge-provision-cli` tool for device onboarding (or move to ZluidrEdge SDK)
-- [ ] Document provisioning workflow and security model
+- [x] Certificate revocation list (CRL) format and checking
+- [x] Key rotation mechanism (signed rotation certificates)
+- [x] Secure key storage abstraction trait (filesystem, TPM, secure enclave backends)
+- [x] `edge-provision-cli` tool for device onboarding (moved to ZluidrEdge SDK)
+- [x] Document provisioning workflow and security model
 
 ---
 

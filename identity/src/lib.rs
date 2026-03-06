@@ -38,6 +38,10 @@ extern crate std;
 
 pub mod error;
 pub mod provisioning;
+#[cfg(feature = "alloc")]
+pub mod cert;
 
 pub use error::Error;
-pub use provisioning::{Certificate, DeviceIdentity, ProvisioningMessage, ProvisioningMessageType};
+pub use provisioning::{DeviceIdentity, ProvisioningMessage, ProvisioningMessageType};
+#[cfg(feature = "alloc")]
+pub use cert::*;

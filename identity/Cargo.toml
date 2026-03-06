@@ -24,3 +24,4 @@ zeroize = { version = "1", default-features = false, features = ["alloc"] }
 
 [dev-dependencies]
 hex = "0.4"
+rand_core = "0.6"
