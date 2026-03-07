@@ -40,4 +40,4 @@ pub mod error;
 pub mod provisioning;
 
 pub use error::Error;
-pub use provisioning::{DeviceIdentity, ProvisioningMessage, ProvisioningMessageType};
+pub use provisioning::{Certificate, DeviceIdentity, ProvisioningMessage, ProvisioningMessageType};

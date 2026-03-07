@@ -93,10 +93,10 @@ Checklist for the `clonic` monorepo — the ZCP wire protocol, cryptography, ide
 - [x] Basic trust decay validation (`chain_depth <= max_depth`)
 
 ### Not Started
-- [ ] Offline-capable certificate chain format (root → server → device)
-- [ ] Certificate serialization/deserialization (wire format for CERT payloads)
-- [ ] Ed25519 signature generation and verification for certificates
-- [ ] Trust decay scoring by depth (not just boolean validation)
+- [x] Offline-capable certificate chain format (root → server → device)
+- [x] Certificate serialization/deserialization (wire format for CERT payloads)
+- [x] Ed25519 signature generation and verification for certificates
+- [x] Trust decay scoring by depth (not just boolean validation)
 - [ ] Certificate revocation list (CRL) format and checking
 - [ ] Key rotation mechanism (signed rotation certificates)
 - [ ] Secure key storage abstraction trait (filesystem, TPM, secure enclave backends)
