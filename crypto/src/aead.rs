@@ -3,9 +3,9 @@
 //! Derives a 32-byte key from the shared secret and a caller-provided context
 //! string using HKDF-SHA3-256. Nonce must be 12 bytes (96-bit GCM nonce).
 
-use alloc::vec::Vec;
 use aes_gcm::aead::{Aead, KeyInit, Payload};
 use aes_gcm::{Aes256Gcm, Nonce};
+use alloc::vec::Vec;
 use hkdf::Hkdf;
 use sha3::Sha3_256;
 
@@ -34,7 +34,13 @@ pub fn encrypt(
     let cipher = Aes256Gcm::new_from_slice(&key).map_err(|_| Error::InvalidKeyLength)?;
     let nonce = Nonce::from_slice(nonce);
     cipher
-        .encrypt(nonce, Payload { msg: plaintext, aad })
+        .encrypt(
+            nonce,
+            Payload {
+                msg: plaintext,
+                aad,
+            },
+        )
         .map_err(|_| Error::MacVerificationFailed)
 }
 
@@ -86,7 +92,13 @@ pub fn decrypt(
     let cipher = Aes256Gcm::new_from_slice(&key).map_err(|_| Error::InvalidKeyLength)?;
     let nonce = Nonce::from_slice(nonce);
     cipher
-        .decrypt(nonce, Payload { msg: ciphertext, aad })
+        .decrypt(
+            nonce,
+            Payload {
+                msg: ciphertext,
+                aad,
+            },
+        )
         .map_err(|_| Error::MacVerificationFailed)
 }
 

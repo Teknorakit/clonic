@@ -8,7 +8,7 @@ use crate::error::Error;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
-use ed25519_dalek::{Signature, SigningKey, VerifyingKey, Signer, Verifier};
+use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 
 /// Device identity: 32-byte Ed25519 public key (ZCP envelope sender_device_id at offset 4).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -113,7 +113,7 @@ impl Certificate {
     /// - not_before (8 bytes, u64 big-endian)
     /// - not_after (8 bytes, u64 big-endian)
     /// - signature (64 bytes)
-    /// Total: 146 bytes
+    ///   Total: 146 bytes
     pub fn encode_to_vec(&self) -> Vec<u8> {
         let mut buf = Vec::with_capacity(146);
         buf.extend_from_slice(self.subject.as_bytes());
@@ -467,7 +467,10 @@ mod tests {
             2000,
             [0u8; 64],
         );
-        assert_eq!(cert.validate_time_bounds(999), Err(Error::CertificateExpired));
+        assert_eq!(
+            cert.validate_time_bounds(999),
+            Err(Error::CertificateExpired)
+        );
     }
 
     #[test]
@@ -482,7 +485,10 @@ mod tests {
             2000,
             [0u8; 64],
         );
-        assert_eq!(cert.validate_time_bounds(2001), Err(Error::CertificateExpired));
+        assert_eq!(
+            cert.validate_time_bounds(2001),
+            Err(Error::CertificateExpired)
+        );
     }
 
     #[test]
@@ -499,8 +505,32 @@ mod tests {
         assert_eq!(&signed_bytes[32..64], issuer.as_bytes());
         assert_eq!(signed_bytes[64], 1);
         assert_eq!(signed_bytes[65], 2);
-        assert_eq!(u64::from_be_bytes([signed_bytes[66], signed_bytes[67], signed_bytes[68], signed_bytes[69], signed_bytes[70], signed_bytes[71], signed_bytes[72], signed_bytes[73]]), 1000);
-        assert_eq!(u64::from_be_bytes([signed_bytes[74], signed_bytes[75], signed_bytes[76], signed_bytes[77], signed_bytes[78], signed_bytes[79], signed_bytes[80], signed_bytes[81]]), 2000);
+        assert_eq!(
+            u64::from_be_bytes([
+                signed_bytes[66],
+                signed_bytes[67],
+                signed_bytes[68],
+                signed_bytes[69],
+                signed_bytes[70],
+                signed_bytes[71],
+                signed_bytes[72],
+                signed_bytes[73]
+            ]),
+            1000
+        );
+        assert_eq!(
+            u64::from_be_bytes([
+                signed_bytes[74],
+                signed_bytes[75],
+                signed_bytes[76],
+                signed_bytes[77],
+                signed_bytes[78],
+                signed_bytes[79],
+                signed_bytes[80],
+                signed_bytes[81]
+            ]),
+            2000
+        );
     }
 
     #[test]
@@ -609,14 +639,38 @@ mod tests {
         let device_verifying_key = device_signing_key.verifying_key();
         let device_identity = DeviceIdentity::from_bytes(device_verifying_key.as_bytes());
 
-        let root_cert = Certificate::sign(root_identity, root_identity, 0, 2, 1000, 3000, &root_signing_key)
-            .expect("Failed to sign root certificate");
+        let root_cert = Certificate::sign(
+            root_identity,
+            root_identity,
+            0,
+            2,
+            1000,
+            3000,
+            &root_signing_key,
+        )
+        .expect("Failed to sign root certificate");
 
-        let server_cert = Certificate::sign(server_identity, root_identity, 1, 2, 1000, 2500, &root_signing_key)
-            .expect("Failed to sign server certificate");
+        let server_cert = Certificate::sign(
+            server_identity,
+            root_identity,
+            1,
+            2,
+            1000,
+            2500,
+            &root_signing_key,
+        )
+        .expect("Failed to sign server certificate");
 
-        let device_cert = Certificate::sign(device_identity, server_identity, 2, 2, 1000, 2000, &server_signing_key)
-            .expect("Failed to sign device certificate");
+        let device_cert = Certificate::sign(
+            device_identity,
+            server_identity,
+            2,
+            2,
+            1000,
+            2000,
+            &server_signing_key,
+        )
+        .expect("Failed to sign device certificate");
 
         assert!(root_cert.verify_signature().is_ok());
         assert!(server_cert.verify_signature().is_ok());

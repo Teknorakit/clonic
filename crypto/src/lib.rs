@@ -32,11 +32,11 @@ pub mod error;
 pub mod suite;
 
 #[cfg(feature = "alloc")]
+pub mod aead;
+#[cfg(feature = "alloc")]
 pub mod kem;
 #[cfg(feature = "alloc")]
 pub mod sign;
-#[cfg(feature = "alloc")]
-pub mod aead;
 
 pub use error::Error;
 pub use suite::CryptoSuite;
@@ -45,10 +45,10 @@ pub use suite::CryptoSuite;
 pub use suite::{KemOutput, SignatureOutput};
 
 #[cfg(feature = "alloc")]
-pub use kem::{ClassicalKem, KemEncapsulation, KemKeypair, PqHybridKem};
-#[cfg(feature = "alloc")]
-pub use sign::{ClassicalSigKeypair, HybridSigKeypair};
-#[cfg(feature = "alloc")]
 pub use aead::{decrypt, encrypt};
 #[cfg(feature = "alloc")]
 pub use aead::{decrypt_with_header_aad, encrypt_with_header_aad};
+#[cfg(feature = "alloc")]
+pub use kem::{ClassicalKem, KemEncapsulation, KemKeypair, PqHybridKem};
+#[cfg(feature = "alloc")]
+pub use sign::{ClassicalSigKeypair, HybridSigKeypair};

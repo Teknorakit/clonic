@@ -34,6 +34,10 @@ extern crate std;
 
 pub mod error;
 pub mod framing;
+pub mod transport;
 
 pub use error::Error;
 pub use framing::TransportFraming;
+#[cfg(feature = "alloc")]
+pub use transport::MockTransport;
+pub use transport::Transport;

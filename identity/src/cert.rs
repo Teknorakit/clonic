@@ -1,5 +1,4 @@
 //! Simple offline-capable certificate and CRL format for ZCP provisioning.
-#![cfg(feature = "alloc")]
 //!
 //! Layout is intentionally compact and deterministic for signing:
 //! - subject_role: u8 (0=root,1=server,2=device)
@@ -11,19 +10,24 @@
 //! - body = concat above fields
 //! - signature: 64-byte Ed25519 over body
 
-use alloc::vec::Vec;
 use crate::error::Error;
 use crate::provisioning::DeviceIdentity;
-use ed25519_dalek::{SigningKey, VerifyingKey, Signer, Signature};
+use alloc::vec::Vec;
+use ed25519_dalek::{Signature, Signer, SigningKey, VerifyingKey};
 
+/// Certificate subject/issuer role.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum CertRole {
+    /// Root authority
     Root = 0,
+    /// Provisioning server
     Server = 1,
+    /// Device leaf
     Device = 2,
 }
 
 impl CertRole {
+    /// Parse from a discriminant byte.
     pub fn from_byte(b: u8) -> Result<Self, Error> {
         match b {
             0 => Ok(CertRole::Root),
@@ -33,23 +37,33 @@ impl CertRole {
         }
     }
 
+    /// Return the discriminant byte.
     pub fn as_byte(self) -> u8 {
         self as u8
     }
 }
 
+/// Compact Ed25519 certificate.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Certificate {
+    /// Role of the subject (leaf)
     pub subject_role: CertRole,
+    /// Role of the issuer (parent)
     pub issuer_role: CertRole,
+    /// Subject public key
     pub subject: DeviceIdentity,
+    /// Not-before timestamp (unix seconds, LE)
     pub not_before: u64,
+    /// Not-after timestamp (unix seconds, LE)
     pub not_after: u64,
+    /// Delegation depth allowed
     pub max_depth: u8,
+    /// Ed25519 signature over body
     pub signature: [u8; 64],
 }
 
 impl Certificate {
+    /// Build an unsigned certificate.
     pub fn new_unsigned(
         subject_role: CertRole,
         issuer_role: CertRole,
@@ -69,6 +83,7 @@ impl Certificate {
         }
     }
 
+    /// Deterministic body used for signing.
     pub fn body(&self) -> Vec<u8> {
         let mut out = Vec::with_capacity(1 + 1 + 32 + 8 + 8 + 1);
         out.push(self.subject_role.as_byte());
@@ -80,12 +95,14 @@ impl Certificate {
         out
     }
 
+    /// Sign with issuer signing key.
     pub fn sign(mut self, issuer_sk: &SigningKey) -> Self {
         let sig: Signature = issuer_sk.sign(&self.body());
         self.signature = sig.to_bytes();
         self
     }
 
+    /// Verify signature and validity window.
     pub fn verify(&self, issuer_pk: &VerifyingKey, now: u64) -> Result<(), Error> {
         if now < self.not_before || now > self.not_after {
             return Err(Error::CertificateExpired);
@@ -96,27 +113,32 @@ impl Certificate {
             .map_err(|_| Error::CertificateSignatureInvalid)
     }
 
+    /// Serialize to body || signature.
     pub fn encode(&self) -> Vec<u8> {
         let mut out = self.body();
         out.extend_from_slice(&self.signature);
         out
     }
 
+    /// Parse from serialized bytes.
     pub fn decode(bytes: &[u8]) -> Result<Self, Error> {
         if bytes.len() != 1 + 1 + 32 + 8 + 8 + 1 + 64 {
             return Err(Error::InvalidCertificate);
         }
         let subject_role = CertRole::from_byte(bytes[0])?;
         let issuer_role = CertRole::from_byte(bytes[1])?;
-        let subject_bytes = <[u8; 32]>::try_from(&bytes[2..34]).map_err(|_| Error::InvalidCertificate)?;
+        let subject_bytes =
+            <[u8; 32]>::try_from(&bytes[2..34]).map_err(|_| Error::InvalidCertificate)?;
         let subject = DeviceIdentity::from_bytes(&subject_bytes);
-        let not_before =
-            u64::from_le_bytes(<[u8; 8]>::try_from(&bytes[34..42]).map_err(|_| Error::InvalidCertificate)?);
-        let not_after =
-            u64::from_le_bytes(<[u8; 8]>::try_from(&bytes[42..50]).map_err(|_| Error::InvalidCertificate)?);
+        let not_before = u64::from_le_bytes(
+            <[u8; 8]>::try_from(&bytes[34..42]).map_err(|_| Error::InvalidCertificate)?,
+        );
+        let not_after = u64::from_le_bytes(
+            <[u8; 8]>::try_from(&bytes[42..50]).map_err(|_| Error::InvalidCertificate)?,
+        );
         let max_depth = bytes[50];
-        let signature = <[u8; 64]>::try_from(&bytes[51..])
-            .map_err(|_| Error::InvalidCertificate)?;
+        let signature =
+            <[u8; 64]>::try_from(&bytes[51..]).map_err(|_| Error::InvalidCertificate)?;
 
         Ok(Self {
             subject_role,
@@ -130,17 +152,20 @@ impl Certificate {
     }
 }
 
+/// Ordered certificate chain root→server→device.
 #[derive(Debug, Clone)]
 pub struct CertificateChain {
-    pub certificates: Vec<Certificate>, // root first, then server, device
+    /// Chain in order (root first)
+    pub certificates: Vec<Certificate>,
 }
 
 impl CertificateChain {
+    /// Create a new chain.
     pub fn new(certificates: Vec<Certificate>) -> Self {
         Self { certificates }
     }
 
-    /// Verify chain order, signatures, and max_depth constraints.
+    /// Verify signatures, order, and depth constraints.
     pub fn verify(&self, now: u64) -> Result<(), Error> {
         if self.certificates.is_empty() {
             return Err(Error::InvalidCertificate);
@@ -161,15 +186,19 @@ impl CertificateChain {
     }
 }
 
-/// Simple CRL structure: list of revoked device public keys, signed by issuer.
+/// Certificate revocation list (CRL).
 #[derive(Debug, Clone)]
 pub struct Crl {
+    /// Issuer public key
     pub issuer: DeviceIdentity,
+    /// Revoked device public keys
     pub revoked: Vec<[u8; 32]>,
+    /// Ed25519 signature
     pub signature: [u8; 64],
 }
 
 impl Crl {
+    /// Deterministic body for signing/verification.
     fn body(&self) -> Vec<u8> {
         let mut out = Vec::with_capacity(32 + 2 + self.revoked.len() * 32);
         out.extend_from_slice(self.issuer.as_bytes());
@@ -180,12 +209,14 @@ impl Crl {
         out
     }
 
+    /// Sign CRL with issuer key.
     pub fn sign(mut self, issuer_sk: &SigningKey) -> Self {
         let sig = issuer_sk.sign(&self.body());
         self.signature = sig.to_bytes();
         self
     }
 
+    /// Verify CRL signature.
     pub fn verify(&self, issuer_pk: &VerifyingKey) -> Result<(), Error> {
         let sig = Signature::from_bytes(&self.signature);
         issuer_pk
@@ -195,14 +226,19 @@ impl Crl {
 }
 
 /// Rotation certificate: binds a new device key to an old one.
+/// Binds old device key to new device key.
 #[derive(Debug, Clone)]
 pub struct RotationCertificate {
+    /// Old device identity
     pub old_device: DeviceIdentity,
+    /// New device identity
     pub new_device: DeviceIdentity,
+    /// Signature by issuer
     pub signature: [u8; 64],
 }
 
 impl RotationCertificate {
+    /// Deterministic body for signing/verification.
     fn body(&self) -> Vec<u8> {
         let mut out = Vec::with_capacity(64);
         out.extend_from_slice(self.old_device.as_bytes());
@@ -210,12 +246,14 @@ impl RotationCertificate {
         out
     }
 
+    /// Sign rotation certificate.
     pub fn sign(mut self, issuer_sk: &SigningKey) -> Self {
         let sig = issuer_sk.sign(&self.body());
         self.signature = sig.to_bytes();
         self
     }
 
+    /// Verify rotation certificate signature.
     pub fn verify(&self, issuer_pk: &VerifyingKey) -> Result<(), Error> {
         let sig = Signature::from_bytes(&self.signature);
         issuer_pk
@@ -250,15 +288,9 @@ mod tests {
         let subject_vk = VerifyingKey::from(&subject_sk);
         let subject_id = DeviceIdentity::from_bytes(&subject_vk.to_bytes());
 
-        let cert = Certificate::new_unsigned(
-            CertRole::Server,
-            CertRole::Root,
-            subject_id,
-            0,
-            u64::MAX,
-            1,
-        )
-        .sign(&issuer_sk);
+        let cert =
+            Certificate::new_unsigned(CertRole::Server, CertRole::Root, subject_id, 0, u64::MAX, 1)
+                .sign(&issuer_sk);
 
         let enc = cert.encode();
         let dec = Certificate::decode(&enc).unwrap();

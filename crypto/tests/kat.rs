@@ -10,8 +10,8 @@ use x25519_dalek::{PublicKey, StaticSecret};
 #[test]
 fn x25519_rfc7748_test_vector_1() {
     // RFC 7748 Section 6.1 - Test vector 1
-    let scalar_bytes = hex::decode("a546e36bf0527c9d3b16154b82465edd62144c0ac1fc5a18506a2244ba449ac4")
-        .unwrap();
+    let scalar_bytes =
+        hex::decode("a546e36bf0527c9d3b16154b82465edd62144c0ac1fc5a18506a2244ba449ac4").unwrap();
     let basepoint_bytes =
         hex::decode("e6db6867583030db3594c1a424b15f7c726624ec26b3353b10a903a6d0ab1c4c").unwrap();
 
@@ -30,8 +30,8 @@ fn x25519_rfc7748_test_vector_1() {
 #[test]
 fn x25519_rfc7748_test_vector_2() {
     // RFC 7748 Section 6.1 - Test vector 2
-    let scalar_bytes = hex::decode("4b66e9d4d1b4673c5ad22691957d6af5c11b6421e0ea01d42ca4169e7918ba0d")
-        .unwrap();
+    let scalar_bytes =
+        hex::decode("4b66e9d4d1b4673c5ad22691957d6af5c11b6421e0ea01d42ca4169e7918ba0d").unwrap();
     let basepoint_bytes =
         hex::decode("e5210f12786811d3f4b7959d0538ae2c31dbe7106fc03c3efc4cd549c715a493").unwrap();
 
@@ -61,9 +61,9 @@ fn hkdf_sha3_256_test_vector() {
 
     // Expected output computed from this implementation (pinned for regression testing)
     let expected = [
-        12, 81, 96, 80, 29, 101, 2, 29, 234, 242, 193, 79, 90, 188, 224, 76, 91, 210, 99,
-        90, 188, 238, 186, 97, 194, 237, 182, 232, 237, 114, 103, 73, 0, 85, 119, 40, 242,
-        201, 242, 196, 193, 121,
+        12, 81, 96, 80, 29, 101, 2, 29, 234, 242, 193, 79, 90, 188, 224, 76, 91, 210, 99, 90, 188,
+        238, 186, 97, 194, 237, 182, 232, 237, 114, 103, 73, 0, 85, 119, 40, 242, 201, 242, 196,
+        193, 121,
     ];
     assert_eq!(&okm[..], expected.as_slice());
 }
@@ -72,10 +72,8 @@ fn hkdf_sha3_256_test_vector() {
 fn aes_256_gcm_nist_sp800_38d_vector() {
     // NIST SP 800-38D AES-256-GCM test vector (cross-implementation)
     // Key, IV, AAD, PT, CT, TAG from the specification (GCM-AES256 test case)
-    let key = hex::decode(
-        "feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308",
-    )
-    .unwrap();
+    let key =
+        hex::decode("feffe9928665731c6d6a8f9467308308feffe9928665731c6d6a8f9467308308").unwrap();
     let nonce = hex::decode("cafebabefacedbaddecaf888").unwrap();
     let aad = hex::decode("feedfacedeadbeeffeedfacedeadbeefabaddad2").unwrap();
     let plaintext = hex::decode(
