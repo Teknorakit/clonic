@@ -115,7 +115,7 @@ Checklist for the `clonic` monorepo — the ZCP wire protocol, cryptography, ide
 - [x] Error types for transport operations
 
 ### Not Started
-- [ ] Define `Transport` trait (`send`, `recv`, `connect`, `disconnect`, error handling)
+- [x] Define `Transport` trait (`send`, `recv`, `connect`, `disconnect`, error handling)
 - [ ] Connection lifecycle management (reconnect, backoff)
 - [ ] Transport-specific configuration types (TCP port, BLE UUID, LoRa params)
 - [ ] Transport registry / selector for multi-transport nodes
