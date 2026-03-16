@@ -116,10 +116,10 @@ Checklist for the `clonic` monorepo — the ZCP wire protocol, cryptography, ide
 
 ### Not Started
 - [x] Define `Transport` trait (`send`, `recv`, `connect`, `disconnect`, error handling)
-- [ ] Connection lifecycle management (reconnect, backoff)
-- [ ] Transport-specific configuration types (TCP port, BLE UUID, LoRa params)
-- [ ] Transport registry / selector for multi-transport nodes
-- [ ] Transport adapter test harness (mock transport for unit testing)
+- [x] Connection lifecycle management (reconnect, backoff)
+- [x] Transport-specific configuration types (TCP port, BLE UUID, LoRa params)
+- [x] Transport registry / selector for multi-transport nodes
+- [x] Transport adapter test harness (mock transport for unit testing)
 
 ---
 
