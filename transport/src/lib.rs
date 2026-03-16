@@ -32,12 +32,20 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
+#[cfg(feature = "alloc")]
+pub mod config;
 pub mod error;
 pub mod framing;
+#[cfg(feature = "alloc")]
+pub mod registry;
 pub mod transport;
 
+#[cfg(feature = "alloc")]
+pub use config::{BleConfig, LoRaConfig, TcpConfig, TransportConfig};
 pub use error::Error;
 pub use framing::TransportFraming;
+#[cfg(feature = "alloc")]
+pub use registry::{TransportFactory, TransportRegistry};
 #[cfg(feature = "alloc")]
 pub use transport::MockTransport;
 pub use transport::Transport;
