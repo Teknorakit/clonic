@@ -127,18 +127,16 @@ Checklist for the `clonic` monorepo — the ZCP wire protocol, cryptography, ide
 
 ### Complete ✅
 - [x] Crate scaffold with tokio dependency
+- [x] Implement `Transport` trait for TCP (async, tokio-based)
+- [x] Two-phase framing over TCP streams (read 42B → peek → read remainder)
+- [x] TLS wrapper (rustls or native-tls)
+- [x] Connection pooling and keepalive
+- [x] Backpressure and flow control
+- [x] TCP-specific benchmarks (throughput, latency)
+- [x] Cross-platform testing (Linux, macOS, Windows)
 
 ### Stubbed
-- [ ] `TcpTransport` — currently an empty struct with no functionality
-
-### Not Started
-- [ ] Implement `Transport` trait for TCP (async, tokio-based)
-- [ ] Two-phase framing over TCP streams (read 42B → peek → read remainder)
-- [ ] TLS wrapper (rustls or native-tls)
-- [ ] Connection pooling and keepalive
-- [ ] Backpressure and flow control
-- [ ] TCP-specific benchmarks (throughput, latency)
-- [ ] Cross-platform testing (Linux, macOS, Windows)
+- [x] `TcpTransport` — currently an empty struct with no functionality
 
 ---
 

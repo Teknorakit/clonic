@@ -13,10 +13,15 @@ categories = ["network-programming"]
 [features]
 default = ["std"]
 std = ["tokio", "tokio/full"]
+tls = ["rustls", "tokio-rustls", "rustls-pemfile", "webpki-roots"]
 
 [dependencies]
-clonic-transport = { path = "../transport", version = "0.1.2", default-features = false }
+clonic-transport = { path = "../transport", version = "0.1.2", default-features = false, features = ["alloc"] }
 tokio = { version = "1", features = ["net", "io-util", "time"], optional = true }
+tokio-rustls = { version = "0.25", optional = true }
+rustls = { version = "0.23", optional = true }
+rustls-pemfile = { version = "2", optional = true }
+webpki-roots = { version = "0.26", optional = true }
 serde = { version = "1", default-features = false, features = ["derive", "alloc"], optional = true }
 
 [dev-dependencies]
