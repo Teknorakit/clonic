@@ -145,6 +145,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[cfg(feature = "getrandom")]
     fn hybrid_sign_verify_roundtrip() {
         let kp = HybridSigKeypair::keygen().unwrap();
         let msg = b"zcp-hybrid-signature";
@@ -153,6 +154,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "getrandom")]
     fn classical_sign_verify_roundtrip() {
         let kp = ClassicalSigKeypair::keygen().unwrap();
         let msg = b"zcp-classical-signature";

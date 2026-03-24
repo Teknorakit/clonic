@@ -105,9 +105,11 @@ pub fn decrypt(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[cfg(feature = "getrandom")]
     use rand_core::{OsRng, RngCore};
 
     #[test]
+    #[cfg(feature = "getrandom")]
     fn encrypt_decrypt_roundtrip() {
         let mut shared = [0u8; 32];
         OsRng.fill_bytes(&mut shared);
@@ -124,6 +126,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "getrandom")]
     fn encrypt_decrypt_header_aad_roundtrip() {
         let mut shared = [0u8; 32];
         OsRng.fill_bytes(&mut shared);

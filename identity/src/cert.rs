@@ -272,8 +272,10 @@ pub trait KeyStore {
 mod tests {
     use super::*;
     use alloc::vec;
+    #[cfg(feature = "getrandom")]
     use rand_core::{OsRng, RngCore};
 
+    #[cfg(feature = "getrandom")]
     fn gen_signing_key() -> SigningKey {
         let mut seed = [0u8; 32];
         OsRng.fill_bytes(&mut seed);
@@ -281,6 +283,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "getrandom")]
     fn certificate_roundtrip_and_verify() {
         let issuer_sk = gen_signing_key();
         let issuer_vk = VerifyingKey::from(&issuer_sk);
@@ -298,6 +301,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "getrandom")]
     fn crl_sign_verify() {
         let issuer_sk = gen_signing_key();
         let issuer_vk = VerifyingKey::from(&issuer_sk);
@@ -312,6 +316,7 @@ mod tests {
     }
 
     #[test]
+    #[cfg(feature = "getrandom")]
     fn rotation_cert_sign_verify() {
         let issuer_sk = gen_signing_key();
         let issuer_vk = VerifyingKey::from(&issuer_sk);

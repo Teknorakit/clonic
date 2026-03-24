@@ -254,7 +254,7 @@ mod tests {
     use crate::error::Error;
 
     #[test]
-    #[cfg(feature = "alloc")]
+    #[cfg(all(feature = "alloc", feature = "getrandom"))]
     fn pq_hybrid_kem_placeholder_errors() {
         // Test that placeholder functions return expected errors until ML-KEM-768 is implemented
         let (x_kp, ml_kp) = PqHybridKem::keygen().unwrap();
@@ -279,7 +279,7 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "alloc")]
+    #[cfg(all(feature = "alloc", feature = "getrandom"))]
     fn classical_kem_roundtrip() {
         let kp = ClassicalKem::keygen().unwrap();
         let context = b"ZCP-v0x02-KEM";

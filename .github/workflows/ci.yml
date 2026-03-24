@@ -44,7 +44,7 @@ jobs:
       - name: "Test (default — no_std core only)"
         run: cargo test
       - name: "Test (alloc)"
-        run: cargo test --features alloc
+        run: cargo test --features alloc,getrandom
       - name: "Test (std)"
         run: cargo test --features std
       - name: "Test (all features)"
@@ -77,7 +77,7 @@ jobs:
       - name: "Run proptest with 1000 cases"
         env:
           PROPTEST_CASES: 1000
-        run: cargo test --features alloc -- proptest
+        run: cargo test --features alloc,getrandom -- proptest
 
   # ── Lints ───────────────────────────────────────────────────────
   lint:
