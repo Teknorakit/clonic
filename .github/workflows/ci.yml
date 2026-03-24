@@ -59,13 +59,15 @@ jobs:
       matrix:
         target:
           - x86_64-unknown-linux-musl    # Alpine Linux (servers)
-          - aarch64-unknown-linux-musl   # Raspberry Pi, Orange Pi
+          - aarch64-unknown-linux-gnu     # ARM64 Linux (alternative to musl)
     steps:
       - uses: actions/checkout@v4
       - name: Install cross-compilation tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y gcc-aarch64-linux-musl gcc-x86_64-linux-musl
+          if [ "${{ matrix.target }}" = "aarch64-unknown-linux-gnu" ]; then
+            sudo apt-get install -y gcc-aarch64-linux-gnu
+          fi
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
