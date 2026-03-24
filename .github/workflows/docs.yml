@@ -1,0 +1,57 @@
+name: Documentation
+
+on:
+  push:
+    branches: [main]
+    paths: ['docs/**']
+  pull_request:
+    branches: [main]
+    paths: ['docs/**']
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
+
+jobs:
+  # Build documentation
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@nightly
+        with:
+          components: rust-docs
+      - name: Build Documentation
+        env:
+          RUSTDOCFLAGS: --cfg docsrs
+        run: |
+          cargo doc --all-features --no-deps --document-private-items
+          # Copy markdown documentation
+          mkdir -p target/doc/docs
+          cp -r docs/* target/doc/docs/
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: target/doc
+
+  # Deploy to GitHub Pages
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
