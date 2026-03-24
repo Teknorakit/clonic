@@ -157,8 +157,7 @@ mod tests {
             assert_eq!(
                 MsgType::from_byte(v.as_byte()),
                 Some(v),
-                "roundtrip failed for {:?}",
-                v
+                "roundtrip failed for {v:?}"
             );
         }
     }

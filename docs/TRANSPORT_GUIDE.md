@@ -15,19 +15,19 @@ All transports must implement the `Transport` trait:
 ```rust
 pub trait Transport {
     type Error: std::error::Error + Send + Sync + 'static;
-    
+
     /// Connect to the transport
     async fn connect(&mut self) -> Result<(), Self::Error>;
-    
+
     /// Send a ZCP envelope
     async fn send(&mut self, frame: &[u8]) -> Result<(), Self::Error>;
-    
+
     /// Receive a ZCP envelope
     async fn recv(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error>;
-    
+
     /// Disconnect from the transport
     async fn disconnect(&mut self) -> Result<(), Self::Error>;
-    
+
     /// Check if transport is connected
     fn is_connected(&self) -> bool;
 }
@@ -87,27 +87,27 @@ pub struct {Protocol}Transport {
 
 impl Transport for {Protocol}Transport {
     type Error = Error;
-    
+
     async fn connect(&mut self) -> Result<(), Self::Error> {
         // Implement protocol-specific connection logic
         todo!()
     }
-    
+
     async fn send(&mut self, frame: &[u8]) -> Result<(), Self::Error> {
         // Use two-phase framing
         self.send_frame(frame).await
     }
-    
+
     async fn recv(&mut self, buf: &mut [u8]) -> Result<usize, Self::Error> {
         // Use two-phase framing
         self.recv_frame(buf).await
     }
-    
+
     async fn disconnect(&mut self) -> Result<(), Self::Error> {
         // Implement protocol-specific disconnection
         todo!()
     }
-    
+
     fn is_connected(&self) -> bool {
         // Return connection status
         todo!()
@@ -122,50 +122,50 @@ impl {Protocol}Transport {
     async fn send_frame(&mut self, frame: &[u8]) -> Result<(), Error> {
         // Validate frame size
         TransportFraming::validate_frame_size(frame.len())?;
-        
+
         // Send complete frame
         self.protocol_send(frame).await?;
         Ok(())
     }
-    
+
     async fn recv_frame(&mut self, buf: &mut [u8]) -> Result<usize, Error> {
         // Phase 1: Read 42-byte header
         let mut header = [0u8; 42];
         let header_bytes = self.protocol_recv_exact(&mut header).await?;
-        
+
         if header_bytes != 42 {
             return Err(Error::BufferTooSmall {
                 need: 42,
                 have: header_bytes,
             });
         }
-        
+
         // Phase 2: Get payload length
         let (payload_len, total_len) = TransportFraming::peek_frame_length(&header)?;
-        
+
         if buf.len() < total_len {
             return Err(Error::BufferTooSmall {
                 need: total_len,
                 have: buf.len(),
             });
         }
-        
+
         // Phase 3: Read remainder
         let remainder_len = total_len - 42;
         let mut remainder = vec![0u8; remainder_len];
         let remainder_bytes = self.protocol_recv_exact(&mut remainder).await?;
-        
+
         if remainder_bytes != remainder_len {
             return Err(Error::BufferTooSmall {
                 need: remainder_len,
                 have: remainder_bytes,
             });
         }
-        
+
         // Assemble complete frame
         buf[..42].copy_from_slice(&header);
         buf[42..total_len].copy_from_slice(&remainder);
-        
+
         Ok(total_len)
     }
 }
@@ -195,20 +195,20 @@ impl Default for {Protocol}Config {
 mod tests {
     use super::*;
     use clonic_transport::Transport;
-    
+
     #[tokio::test]
     async fn test_framing_roundtrip() {
         let mut transport = {Protocol}Transport::new(Default::default());
-        
+
         // Test frame encoding/decoding
         let test_frame = b"test frame data";
         transport.connect().await.unwrap();
-        
+
         transport.send(test_frame).await.unwrap();
-        
+
         let mut recv_buf = [0u8; 1024];
         let len = transport.recv(&mut recv_buf).await.unwrap();
-        
+
         assert_eq!(&recv_buf[..len], test_frame);
     }
 }
@@ -234,7 +234,7 @@ impl UdpTransport {
             local_addr,
         }
     }
-    
+
     async fn protocol_send(&mut self, data: &[u8]) -> Result<(), Error> {
         if let Some(socket) = &self.socket {
             socket.send_to(data, self.remote_addr).await
@@ -242,7 +242,7 @@ impl UdpTransport {
         }
         Ok(())
     }
-    
+
     async fn protocol_recv_exact(&mut self, buf: &mut [u8]) -> Result<usize, Error> {
         if let Some(socket) = &self.socket {
             let (len, _) = socket.recv_from(buf).await
@@ -256,14 +256,14 @@ impl UdpTransport {
 
 impl Transport for UdpTransport {
     type Error = Error;
-    
+
     async fn connect(&mut self) -> Result<(), Self::Error> {
         let socket = UdpSocket::bind(self.local_addr).await
             .map_err(|_| Error::ConnectionFailed)?;
         self.socket = Some(socket);
         Ok(())
     }
-    
+
     // ... implement other methods
 }
 ```
@@ -301,7 +301,7 @@ Update `Cargo.toml` in the workspace root:
 [workspace]
 members = [
     "core",
-    "crypto", 
+    "crypto",
     "identity",
     "transport",
     "transport-tcp",
@@ -348,7 +348,7 @@ fn test_with_mock() {
     transport.set_connect_result(Ok(()));
     transport.set_send_result(Ok(()));
     transport.set_recv_result(Ok(42));
-    
+
     // Test your logic with predictable behavior
 }
 ```

@@ -58,11 +58,11 @@ fn benchmark_throughput() {
     let latency_us = elapsed.as_micros() as f64 / iterations as f64;
 
     println!("Throughput Benchmark Results:");
-    println!("  Iterations: {}", iterations);
+    println!("  Iterations: {iterations}");
     println!("  Frame size: {} bytes", frame.len());
     println!("  Total time: {:.2}ms", elapsed.as_secs_f64() * 1000.0);
-    println!("  Throughput: {:.2} Mbps", throughput_mbps);
-    println!("  Avg latency: {:.2} µs", latency_us);
+    println!("  Throughput: {throughput_mbps:.2} Mbps");
+    println!("  Avg latency: {latency_us:.2} µs");
 }
 
 /// Benchmark TCP transport latency.
@@ -116,11 +116,11 @@ fn benchmark_latency() {
     let avg_latency = latencies.iter().sum::<f64>() / latencies.len() as f64;
 
     println!("Latency Benchmark Results:");
-    println!("  Iterations: {}", iterations);
+    println!("  Iterations: {iterations}");
     println!("  Frame size: {} bytes", frame.len());
-    println!("  Min latency: {:.2} µs", min_latency);
-    println!("  Max latency: {:.2} µs", max_latency);
-    println!("  Avg latency: {:.2} µs", avg_latency);
+    println!("  Min latency: {min_latency:.2} µs");
+    println!("  Max latency: {max_latency:.2} µs");
+    println!("  Avg latency: {avg_latency:.2} µs");
 }
 
 /// Benchmark TCP transport with various frame sizes.

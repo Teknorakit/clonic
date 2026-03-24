@@ -83,8 +83,7 @@ mod tests {
             assert_eq!(
                 CryptoSuite::from_byte(s.as_byte()),
                 Some(s),
-                "roundtrip failed for {:?}",
-                s
+                "roundtrip failed for {s:?}"
             );
         }
     }

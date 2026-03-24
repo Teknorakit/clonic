@@ -48,7 +48,7 @@ let indonesia_zone = ZoneConfig {
     enforcement: EnforcementLevel::Strict,
 };
 
-// Singapore (Zone 702) 
+// Singapore (Zone 702)
 let singapore_zone = ZoneConfig {
     zone_id: 702,
     name: "Singapore".to_string(),
@@ -103,7 +103,7 @@ pub fn create_national_zone(country_code: u16, country_name: &str) -> ZoneConfig
 ```rust
 pub fn create_economic_zone(zone_id: u16, name: &str, member_countries: &[u16]) -> ZoneConfig {
     let mut cross_zone_policies = Vec::new();
-    
+
     // Allow data flow between member states
     for &country in member_countries {
         if country != zone_id {
@@ -119,7 +119,7 @@ pub fn create_economic_zone(zone_id: u16, name: &str, member_countries: &[u16]) 
             });
         }
     }
-    
+
     ZoneConfig {
         zone_id,
         name: name.to_string(),
@@ -180,19 +180,19 @@ pub enum DataType {
     BiometricData,
     HealthData,
     FinancialData,
-    
+
     // Business Data
     BusinessData,
     SupplyChain,
     CustomerData,
     AnalyticsData,
-    
+
     // Operational Data
     SensorReadings,
     SystemLogs,
     AuditLogs,
     Metrics,
-    
+
     // Public Data
     PublicAnnouncements,
     AggregatedMetrics,
@@ -260,12 +260,12 @@ pub enum DeviceType {
     Server,
     Gateway,
     Router,
-    
+
     // Endpoints
     IoTSensor,
     Mobile,
     Desktop,
-    
+
     // Specialized
     MedicalDevice,
     IndustrialController,
@@ -286,7 +286,7 @@ impl DeviceType {
             DeviceType::FinancialTerminal => 1,
         }
     }
-    
+
     pub fn required_features(&self) -> Vec<Feature> {
         match self {
             DeviceType::Server => vec![Feature::HighAvailability, Feature::AuditLogging],
@@ -338,7 +338,7 @@ impl ZoneEnforcer {
             metrics: EnforcementMetrics::default(),
         }
     }
-    
+
     pub fn check_cross_zone_transfer(
         &mut self,
         source_zone: u16,
@@ -348,12 +348,12 @@ impl ZoneEnforcer {
         if source_zone == target_zone {
             return EnforcementResult::Allowed;
         }
-        
+
         // Find applicable policy
         let policy = self.config.cross_zone_policies
             .iter()
             .find(|p| p.target_zone == target_zone);
-        
+
         match policy {
             Some(policy) if policy.allowed_data_types.contains(&data_type) => {
                 self.handle_allowed_transfer(source_zone, target_zone, data_type)
@@ -366,7 +366,7 @@ impl ZoneEnforcer {
             }
         }
     }
-    
+
     fn handle_allowed_transfer(
         &mut self,
         source_zone: u16,
@@ -375,10 +375,10 @@ impl ZoneEnforcer {
     ) -> EnforcementResult {
         // Log successful transfer
         self.metrics.successful_transfers += 1;
-        
+
         EnforcementResult::Allowed
     }
-    
+
     fn handle_violation(
         &mut self,
         source_zone: u16,
@@ -392,9 +392,9 @@ impl ZoneEnforcer {
             data_type,
             violation_type: ViolationType::UnauthorizedTransfer,
         };
-        
+
         self.violation_log.push(violation.clone());
-        
+
         match &self.config.enforcement {
             EnforcementLevel::Strict { block_violations, .. } => {
                 if *block_violations {
@@ -420,7 +420,7 @@ impl ZoneEnforcer {
 ```rust
 pub fn create_asean_zone() -> ZoneConfig {
     let member_states = vec![360, 702, 458, 704, 418]; // Indonesia, Singapore, Myanmar, Laos, Thailand
-    
+
     ZoneConfig {
         zone_id: 999, // Special ASEAN zone ID
         name: "ASEAN Economic Community".to_string(),
@@ -543,41 +543,41 @@ impl ZoneConfigManager {
     ) -> Result<(), ConfigError> {
         // Validate new configuration
         self.validate_config(&new_config)?;
-        
+
         // Create migration plan
         let migration = MigrationPlan::new(
             &self.configs[&zone_id],
             &new_config,
         );
-        
+
         // Apply migration
         migration.execute(self)?;
-        
+
         // Update configuration
         self.configs.insert(zone_id, new_config);
         self.version += 1;
-        
+
         Ok(())
     }
-    
+
     fn validate_config(&self, config: &ZoneConfig) -> Result<(), ConfigError> {
         // Validate residency tag
         if !config.residency_tag.is_valid() {
             return Err(ConfigError::InvalidResidencyTag);
         }
-        
+
         // Validate chain depth
         if config.max_chain_depth > 5 {
             return Err(ConfigError::ChainDepthTooHigh);
         }
-        
+
         // Validate cross-zone policies
         for policy in &config.cross_zone_policies {
             if policy.target_zone == config.zone_id {
                 return Err(ConfigError::SelfReferencingPolicy);
             }
         }
-        
+
         Ok(())
     }
 }
@@ -595,7 +595,7 @@ pub struct MigrationPlan {
 impl MigrationPlan {
     pub fn new(old_config: &ZoneConfig, new_config: &ZoneConfig) -> Self {
         let mut changes = Vec::new();
-        
+
         // Detect changes
         if old_config.max_chain_depth != new_config.max_chain_depth {
             changes.push(ConfigChange::ChainDepthChanged {
@@ -603,14 +603,14 @@ impl MigrationPlan {
                 new: new_config.max_chain_depth,
             });
         }
-        
+
         if old_config.enforcement != new_config.enforcement {
             changes.push(ConfigChange::EnforcementChanged {
                 old: old_config.enforcement.clone(),
                 new: new_config.enforcement.clone(),
             });
         }
-        
+
         Self {
             zone_id: old_config.zone_id,
             old_config: old_config.clone(),
@@ -618,7 +618,7 @@ impl MigrationPlan {
             changes,
         }
     }
-    
+
     pub fn execute(&self, manager: &mut ZoneConfigManager) -> Result<(), ConfigError> {
         for change in &self.changes {
             match change {
@@ -634,7 +634,7 @@ impl MigrationPlan {
                 }
             }
         }
-        
+
         Ok(())
     }
 }

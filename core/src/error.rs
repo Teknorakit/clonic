@@ -97,7 +97,7 @@ mod tests {
 
     fn display(e: &Error) -> FmtBuf {
         let mut buf = FmtBuf::new();
-        core::fmt::Write::write_fmt(&mut buf, format_args!("{}", e)).unwrap();
+        core::fmt::Write::write_fmt(&mut buf, format_args!("{e}")).unwrap();
         buf
     }
 

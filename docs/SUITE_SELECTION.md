@@ -13,7 +13,7 @@ ZCP supports two cryptographic suites:
 
 ### Composition
 - **Key Exchange**: ML-KEM-768 + X25519 hybrid
-- **Signatures**: ML-DSA-65 + Ed25519 hybrid  
+- **Signatures**: ML-DSA-65 + Ed25519 hybrid
 - **Encryption**: AES-256-GCM with HKDF-SHA3-256 key derivation
 
 ### When to Use
@@ -29,7 +29,7 @@ ZCP supports two cryptographic suites:
 
 ### Performance Characteristics
 - **Key Generation**: ~2-3x slower than classical
-- **Key Encapsulation**: ~1.5-2x slower than classical  
+- **Key Encapsulation**: ~1.5-2x slower than classical
 - **Signature**: ~2-3x slower than classical
 - **Encryption**: Same performance as classical (AES-256-GCM)
 
@@ -106,7 +106,7 @@ ZCP supports two cryptographic suites:
 | ARM Cortex-M4 | 15.2     | 5.1        |
 | RISC-V   | 18.7        | 6.2        |
 
-### Key Encapsulation (ms)  
+### Key Encapsulation (ms)
 | Platform | Suite 0x01 | Suite 0x02 |
 |----------|------------|------------|
 | x86_64   | 1.8        | 0.9        |

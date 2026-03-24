@@ -65,7 +65,7 @@ impl PqHybridKem {
     /// Generate a new PQ Hybrid keypair.
     ///
     /// Returns (X25519 keypair, ML-KEM-768 keypair).
-    /// 
+    ///
     /// # Warning
     /// The ML-KEM-768 portion is currently a placeholder implementation that returns
     /// empty vectors. This will be replaced with a proper ML-KEM-768 implementation

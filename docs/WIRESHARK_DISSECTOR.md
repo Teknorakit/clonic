@@ -86,15 +86,15 @@ zcp.fields = {
     suite = ProtoField.uint8("zcp.suite", "Crypto Suite", base.HEX, nil, nil, "Cryptographic suite")
     msg_type = ProtoField.uint8("zcp.msg_type", "Message Type", base.HEX, nil, nil, "Message type")
     flags = ProtoField.uint8("zcp.flags", "Flags", base.HEX, nil, nil, "Message flags")
-    
+
     -- Device identification
     sender_device_id = ProtoField.bytes("zcp.sender_device_id", "Sender Device ID", base.NONE)
     timestamp = ProtoField.absolute_time("zcp.timestamp", "Timestamp", base.UTC)
-    
+
     -- Payload information
     payload_length = ProtoField.uint32("zcp.payload_length", "Payload Length", base.DEC)
     residency_tag = ProtoField.uint16("zcp.residency_tag", "Residency Tag", base.DEC)
-    
+
     -- Payload content
     nonce = ProtoField.bytes("zcp.nonce", "Nonce", base.NONE)
     ciphertext = ProtoField.bytes("zcp.ciphertext", "Ciphertext", base.NONE)
@@ -178,25 +178,25 @@ function zcp.dissector.dissector(buffer, pinfo, tree)
     if buffer:len() < 58 then  -- 42 header + 16 MAC minimum
         return 0
     end
-    
+
     -- Set protocol column
     pinfo.cols.protocol = "ZCP"
-    
+
     -- Create protocol tree
     local subtree = tree:add(zcp.proto, buffer())
-    
+
     -- Parse header
     local header = buffer(0, 42)
     local version = header(0, 1):uint()
     local suite = header(1, 1):uint()
     local msg_type = header(2, 1):uint()
     local msg_flags = header(3, 1):uint()
-    
+
     -- Add header fields
     subtree:add(zcp.fields.version, version)
     subtree:add(zcp.fields.suite, suite):append_text(" (" .. (crypto_suites[suite] or "Unknown") .. ")")
     subtree:add(zcp.fields.msg_type, msg_type):append_text(" (" .. (msg_types[msg_type] or "Unknown") .. ")")
-    
+
     -- Parse flags
     local flags_tree = subtree:add(zcp.proto, "Flags", header(3, 1))
     for bit, name in pairs(flags) do
@@ -204,49 +204,49 @@ function zcp.dissector.dissector(buffer, pinfo, tree)
             flags_tree:add(zcp.proto, name, bit)
         end
     end
-    
+
     -- Parse device ID
     local device_id = header(4, 8)
     subtree:add(zcp.fields.sender_device_id, device_id)
-    
+
     -- Parse timestamp
     local timestamp_bytes = header(20, 8)
     local timestamp = timestamp_bytes:uint64()
     subtree:add(zcp.fields.timestamp, NSTime(timestamp, 0))
-    
+
     -- Parse payload length
     local payload_length = header(36, 4):uint()
     subtree:add(zcp.fields.payload_length, payload_length)
-    
+
     -- Parse residency tag
     local residency_tag = header(40, 2):uint()
     local country_name = country_codes[residency_tag] or "Unknown"
     subtree:add(zcp.fields.residency_tag, residency_tag):append_text(" (" .. country_name .. ")")
-    
+
     -- Parse payload if present
     if buffer:len() >= 58 then
         local payload_start = 42
         local payload_size = payload_length
         local mac_start = payload_start + payload_size
-        
+
         if buffer:len() >= mac_start + 16 then
             local payload = buffer(payload_start, payload_size)
             local mac = buffer(mac_start, 16)
-            
+
             -- Add MAC
             subtree:add(zcp.fields.mac, mac)
-            
+
             -- Parse payload based on message type
             if msg_type == 0x01 and payload_size >= 12 then
                 -- Encrypted application data
                 local nonce = payload(0, 12)
                 local ciphertext = payload(12, payload_size - 12)
-                
+
                 subtree:add(zcp.fields.nonce, nonce)
                 subtree:add(zcp.fields.ciphertext, ciphertext)
-                
+
                 -- Set info column
-                pinfo.cols.info = string.format("ZCP %s -> %s (%s)", 
+                pinfo.cols.info = string.format("ZCP %s -> %s (%s)",
                     msg_types[msg_type] or "Unknown",
                     country_name,
                     crypto_suites[suite] or "Unknown"
@@ -255,11 +255,11 @@ function zcp.dissector.dissector(buffer, pinfo, tree)
                 -- Key exchange
                 local ephemeral_pk = payload(0, 32)
                 local encapsulated_key = payload(32, payload_size - 32)
-                
+
                 subtree:add(zcp.proto, "Ephemeral Public Key", ephemeral_pk)
                 subtree:add(zcp.proto, "Encapsulated Key", encapsulated_key)
-                
-                pinfo.cols.info = string.format("ZCP %s (%s)", 
+
+                pinfo.cols.info = string.format("ZCP %s (%s)",
                     msg_types[msg_type] or "Unknown",
                     crypto_suites[suite] or "Unknown"
                 )
@@ -267,16 +267,16 @@ function zcp.dissector.dissector(buffer, pinfo, tree)
                 -- Heartbeat
                 local sequence = payload(0, 4):uint()
                 subtree:add(zcp.proto, "Sequence Number", sequence)
-                
-                pinfo.cols.info = string.format("ZCP %s (seq=%d)", 
+
+                pinfo.cols.info = string.format("ZCP %s (seq=%d)",
                     msg_types[msg_type] or "Unknown",
                     sequence
                 )
             else
                 -- Unknown payload type
                 subtree:add(zcp.proto, "Payload", payload)
-                
-                pinfo.cols.info = string.format("ZCP %s (%s, %d bytes)", 
+
+                pinfo.cols.info = string.format("ZCP %s (%s, %d bytes)",
                     msg_types[msg_type] or "Unknown",
                     country_name,
                     payload_size
@@ -284,7 +284,7 @@ function zcp.dissector.dissector(buffer, pinfo, tree)
             end
         end
     end
-    
+
     return buffer:len()
 end
 
@@ -295,16 +295,16 @@ function post_dissector.dissector(buffer, pinfo, tree)
     -- Analyze zone compliance
     if pinfo.cols.protocol == "ZCP" then
         local zcp_tree = tree:child("ZCP Zone Analysis")
-        
+
         -- Extract residency tag from parsed data
         local residency_tag = pinfo.cols.info:match("%((%d+)%s+%w+%)")
         if residency_tag then
             residency_tag = tonumber(residency_tag)
             local country_name = country_codes[residency_tag] or "Unknown"
-            
+
             zcp_tree:add(zcp.proto, "Source Zone", country_name)
             zcp_tree:add(zcp.proto, "Zone ID", residency_tag)
-            
+
             -- Check for cross-zone transfers
             -- This would require tracking previous packets
             -- For now, just display the zone information
@@ -465,7 +465,7 @@ wireshark -r capture.pcap -X lua_script:zcp_init.lua
 -- Add to dissector for debugging
 function zcp.dissector.dissector(buffer, pinfo, tree)
     print(string.format("ZCP packet: %d bytes, type: 0x%02x", buffer:len(), buffer(2, 1):uint()))
-    
+
     -- Existing dissector code...
 end
 ```

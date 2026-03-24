@@ -212,7 +212,7 @@ mod tests {
         for tag in tags {
             let bytes = tag.to_be_bytes();
             let reconstructed = ResidencyTag::from_be_bytes(bytes);
-            assert_eq!(reconstructed, tag, "BE roundtrip failed for {:?}", tag);
+            assert_eq!(reconstructed, tag, "BE roundtrip failed for {tag:?}");
         }
     }
 
@@ -345,13 +345,13 @@ mod tests {
 
     fn heapless_fmt(tag: ResidencyTag) -> FmtBuf {
         let mut buf = FmtBuf::new();
-        core::fmt::Write::write_fmt(&mut buf, format_args!("{}", tag)).unwrap();
+        core::fmt::Write::write_fmt(&mut buf, format_args!("{tag}")).unwrap();
         buf
     }
 
     fn format_debug(tag: ResidencyTag) -> FmtBuf {
         let mut buf = FmtBuf::new();
-        core::fmt::Write::write_fmt(&mut buf, format_args!("{:?}", tag)).unwrap();
+        core::fmt::Write::write_fmt(&mut buf, format_args!("{tag:?}")).unwrap();
         buf
     }
 

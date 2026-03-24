@@ -30,7 +30,7 @@ ZCP provisioning establishes secure device identities and defines the trust rela
 1. **Device Generates Key Pair**
    ```rust
    use clonic_identity::HybridSigKeypair;
-   
+
    let device_keypair = HybridSigKeypair::keygen()?;
    let device_id = DeviceIdentity::from_bytes(&device_keypair.ed_public);
    ```
@@ -38,7 +38,7 @@ ZCP provisioning establishes secure device identities and defines the trust rela
 2. **Device Creates Provisioning Request**
    ```rust
    use clonic_identity::ProvisioningMessage;
-   
+
    let request = ProvisioningMessage::request_request(
        device_id,
        Some(device_capabilities), // Optional device metadata
@@ -60,7 +60,7 @@ ZCP provisioning establishes secure device identities and defines the trust rela
 2. **Authority Issues Device Certificate**
    ```rust
    use clonic_identity::Certificate;
-   
+
    let cert = Certificate::sign(
        device_id,           // Subject
        zone_root_public,     // Issuer
@@ -82,7 +82,7 @@ ZCP provisioning establishes secure device identities and defines the trust rela
 1. **Device Validates Certificate Chain**
    ```rust
    let cert_chain = parse_certificate_chain(response)?;
-   
+
    // Validate each certificate in the chain
    for cert in &cert_chain {
        cert.verify_signature()?;
@@ -102,7 +102,7 @@ ZCP provisioning establishes secure device identities and defines the trust rela
 ```
 Certificate (146 bytes):
 - subject_public_key: [u8; 32]    // Device Ed25519 public key
-- issuer_public_key: [u8; 32]     // Issuer Ed25519 public key  
+- issuer_public_key: [u8; 32]     // Issuer Ed25519 public key
 - not_before: u64                   // Unix timestamp (LE)
 - not_after: u64                    // Unix timestamp (LE)
 - max_depth: u8                    // Maximum delegation depth
@@ -154,25 +154,25 @@ impl DeviceProvisioner {
             zone_config: ZoneConfig::default(),
         })
     }
-    
+
     pub fn provision_device(&mut self, zone_authority: &str) -> Result<(), Error> {
         // Generate provisioning request
         let device_id = DeviceIdentity::from_bytes(&self.keypair.ed_public);
         let request = ProvisioningMessage::request_request(device_id, None);
-        
+
         // Send request to zone authority
         let response = send_provisioning_request(zone_authority, &request)?;
-        
+
         // Parse and validate certificate
         let cert = Certificate::from_bytes(&response.certificate_data)?;
         cert.verify_signature()?;
-        
+
         // Store certificate
         self.certificate = Some(cert);
-        
+
         Ok(())
     }
-    
+
     pub fn is_provisioned(&self) -> bool {
         self.certificate.is_some()
     }
@@ -198,7 +198,7 @@ impl ZoneAuthority {
             issued_certificates: Vec::new(),
         })
     }
-    
+
     pub fn issue_device_certificate(
         &mut self,
         device_request: &ProvisioningMessage,
@@ -206,14 +206,14 @@ impl ZoneAuthority {
     ) -> Result<Certificate, Error> {
         // Validate request
         device_request.verify_signature()?;
-        
+
         // Get device identity
         let device_id = DeviceIdentity::from_bytes(&device_request.sender_device_id);
-        
+
         // Calculate expiry
         let now = current_unix_timestamp();
         let expiry = now + (expiry_days * 24 * 60 * 60);
-        
+
         // Issue certificate
         let cert = Certificate::sign(
             device_id,
@@ -224,10 +224,10 @@ impl ZoneAuthority {
             3, // Max depth for devices
             &self.root_keypair.ed_secret,
         );
-        
+
         // Track issued certificate
         self.issued_certificates.push(cert.clone());
-        
+
         Ok(cert)
     }
 }
@@ -288,7 +288,7 @@ pub enum ProvisioningError {
 fn test_certificate_signing() {
     let keypair = HybridSigKeypair::keygen().unwrap();
     let device_id = DeviceIdentity::from_bytes(&keypair.ed_public);
-    
+
     let cert = Certificate::sign(
         device_id,
         device_id, // Self-signed for testing
@@ -298,7 +298,7 @@ fn test_certificate_signing() {
         2,
         &keypair.ed_secret,
     ).unwrap();
-    
+
     assert!(cert.verify_signature().is_ok());
 }
 ```
@@ -309,13 +309,13 @@ fn test_certificate_signing() {
 async fn test_provisioning_workflow() {
     // Setup zone authority
     let mut authority = ZoneAuthority::new().unwrap();
-    
+
     // Setup device
     let mut device = DeviceProvisioner::new().unwrap();
-    
+
     // Provision device
     device.provision_device("localhost:8080").await.unwrap();
-    
+
     // Verify provisioning
     assert!(device.is_provisioned());
 }

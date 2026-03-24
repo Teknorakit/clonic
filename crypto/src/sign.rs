@@ -42,10 +42,10 @@ impl HybridSigKeypair {
                 ed_public: ed_vk.to_bytes(),
                 ed_secret: ed_seed,
             };
-            
+
             // Zeroize the temporary seed after use
             ed_seed.zeroize();
-            
+
             Ok(keypair)
         }
         #[cfg(not(feature = "getrandom"))]
@@ -101,15 +101,15 @@ impl ClassicalSigKeypair {
             OsRng.fill_bytes(&mut ed_seed);
             let ed_sk = SigningKey::from_bytes(&ed_seed);
             let ed_vk = VerifyingKey::from(&ed_sk);
-            
+
             let keypair = Self {
                 ed_public: ed_vk.to_bytes(),
                 ed_secret: ed_seed,
             };
-            
+
             // Zeroize the temporary seed after use
             ed_seed.zeroize();
-            
+
             Ok(keypair)
         }
         #[cfg(not(feature = "getrandom"))]
