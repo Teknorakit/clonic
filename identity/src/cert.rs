@@ -270,7 +270,9 @@ pub trait KeyStore {
 
 #[cfg(test)]
 mod tests {
+    #[cfg(feature = "getrandom")]
     use super::*;
+    #[cfg(feature = "getrandom")]
     use alloc::vec;
     #[cfg(feature = "getrandom")]
     use rand_core::{OsRng, RngCore};

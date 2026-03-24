@@ -12,8 +12,9 @@ categories = ["cryptography", "no-std"]
 
 [features]
 default = []
-std = ["alloc"]
+std = ["alloc", "getrandom"]
 alloc = []
+getrandom = ["dep:getrandom", "rand_core/getrandom"]
 serde = ["dep:serde", "alloc"]
 
 [dependencies]
@@ -21,7 +22,8 @@ clonic-crypto = { path = "../crypto", version = "0.1.2", default-features = fals
 ed25519-dalek = { version = "2", default-features = false, features = ["hazmat"] }
 serde = { version = "1", default-features = false, features = ["derive", "alloc"], optional = true }
 zeroize = { version = "1", default-features = false, features = ["alloc"] }
+getrandom = { version = "0.2", default-features = false, features = ["js"], optional = true }
+rand_core = { version = "0.6", default-features = false }
 
 [dev-dependencies]
 hex = "0.4"
-rand_core = "0.6"
