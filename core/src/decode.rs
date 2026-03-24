@@ -38,7 +38,7 @@ pub fn parse(buf: &[u8]) -> Result<EnvelopeRef<'_>, Error> {
 
 /// Parse an owned envelope from wire bytes (requires `alloc`).
 ///
-/// Re-export of [`Envelope::from_bytes`].
+/// Re-export of [`crate::envelope::Envelope::from_bytes`].
 #[cfg(feature = "alloc")]
 #[cfg_attr(docsrs, doc(cfg(feature = "alloc")))]
 pub fn parse_owned(buf: &[u8]) -> Result<crate::envelope::Envelope, Error> {

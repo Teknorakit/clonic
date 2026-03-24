@@ -5,6 +5,7 @@
 use alloc::vec::Vec;
 use ed25519_dalek::Signer;
 use ed25519_dalek::{Signature as EdSignature, SigningKey, VerifyingKey};
+#[cfg(feature = "getrandom")]
 use rand_core::{OsRng, RngCore};
 use zeroize::Zeroize;
 
@@ -30,15 +31,28 @@ impl Drop for HybridSigKeypair {
 impl HybridSigKeypair {
     /// Generate a new hybrid signature keypair (currently Ed25519 only).
     pub fn keygen() -> Result<Self, Error> {
-        let mut ed_seed = [0u8; 32];
-        OsRng.fill_bytes(&mut ed_seed);
-        let ed_sk = SigningKey::from_bytes(&ed_seed);
-        let ed_vk = VerifyingKey::from(&ed_sk);
+        #[cfg(feature = "getrandom")]
+        {
+            let mut ed_seed = [0u8; 32];
+            OsRng.fill_bytes(&mut ed_seed);
+            let ed_sk = SigningKey::from_bytes(&ed_seed);
+            let ed_vk = VerifyingKey::from(&ed_sk);
 
-        Ok(HybridSigKeypair {
-            ed_public: ed_vk.to_bytes(),
-            ed_secret: ed_seed,
-        })
+            let keypair = HybridSigKeypair {
+                ed_public: ed_vk.to_bytes(),
+                ed_secret: ed_seed,
+            };
+            
+            // Zeroize the temporary seed after use
+            ed_seed.zeroize();
+            
+            Ok(keypair)
+        }
+        #[cfg(not(feature = "getrandom"))]
+        {
+            // No randomness source available
+            Err(Error::NoRandomnessSource)
+        }
     }
 
     /// Sign a message with Ed25519 (ML-DSA-65 placeholder).
@@ -81,14 +95,28 @@ impl Drop for ClassicalSigKeypair {
 impl ClassicalSigKeypair {
     /// Generate a new Ed25519 signature keypair.
     pub fn keygen() -> Result<Self, Error> {
-        let mut ed_seed = [0u8; 32];
-        OsRng.fill_bytes(&mut ed_seed);
-        let ed_sk = SigningKey::from_bytes(&ed_seed);
-        let ed_vk = VerifyingKey::from(&ed_sk);
-        Ok(Self {
-            ed_public: ed_vk.to_bytes(),
-            ed_secret: ed_seed,
-        })
+        #[cfg(feature = "getrandom")]
+        {
+            let mut ed_seed = [0u8; 32];
+            OsRng.fill_bytes(&mut ed_seed);
+            let ed_sk = SigningKey::from_bytes(&ed_seed);
+            let ed_vk = VerifyingKey::from(&ed_sk);
+            
+            let keypair = Self {
+                ed_public: ed_vk.to_bytes(),
+                ed_secret: ed_seed,
+            };
+            
+            // Zeroize the temporary seed after use
+            ed_seed.zeroize();
+            
+            Ok(keypair)
+        }
+        #[cfg(not(feature = "getrandom"))]
+        {
+            // No randomness source available
+            Err(Error::NoRandomnessSource)
+        }
     }
 
     /// Sign a message with Ed25519.

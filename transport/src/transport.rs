@@ -50,7 +50,7 @@ pub fn connect_with_backoff<T: Transport>(
     for i in 0..attempts {
         match transport.connect() {
             Ok(()) => return Ok(()),
-            Err(e) if i + 1 < attempts => {
+            Err(_e) if i + 1 < attempts => {
                 let delay = policy.backoff_ms.saturating_mul((i as u32) + 1);
                 on_backoff(delay);
             }

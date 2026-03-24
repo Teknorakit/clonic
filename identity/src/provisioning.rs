@@ -8,6 +8,7 @@ use crate::error::Error;
 #[cfg(feature = "alloc")]
 use alloc::vec::Vec;
 
+#[cfg(feature = "alloc")]
 use ed25519_dalek::{Signature, Signer, SigningKey, Verifier, VerifyingKey};
 
 /// Device identity: 32-byte Ed25519 public key (ZCP envelope sender_device_id at offset 4).

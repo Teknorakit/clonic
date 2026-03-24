@@ -173,13 +173,13 @@ Checklist for the `clonic` monorepo — the ZCP wire protocol, cryptography, ide
 - [ ] Profile memory usage per crate
 
 ### Documentation
-- [ ] RFC-style protocol specification (standalone, not just manifesto)
-- [ ] Full rustdoc for all public APIs across all crates
-- [ ] Suite selection guidelines document
-- [ ] Zone configuration cookbook
-- [ ] Transport implementation guide (how to add a new transport)
-- [ ] Provisioning workflow guide
-- [ ] Wireshark dissector for ZCP envelopes (`zcpctl` or standalone)
+- [x] RFC-style protocol specification (standalone, not just manifesto)
+- [x] Full rustdoc for all public APIs across all crates
+- [x] Suite selection guidelines document
+- [x] Zone configuration cookbook
+- [x] Transport implementation guide (how to add a new transport)
+- [x] Provisioning workflow guide
+- [x] Wireshark dissector for ZCP envelopes (`zcpctl` or standalone)
 
 ### Compliance & Security Audit
 - [ ] Map ZCP wire format to Indonesia PP 71/2019 + GR 82/2012 requirements

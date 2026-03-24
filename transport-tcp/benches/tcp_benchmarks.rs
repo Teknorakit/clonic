@@ -1,11 +1,11 @@
 //! TCP transport benchmarks for throughput and latency.
 
-use clonic_transport_tcp::TcpTransport;
 use clonic_transport::config::TcpConfig;
 use clonic_transport::Transport;
+use clonic_transport_tcp::TcpTransport;
 use std::time::Instant;
-use tokio::net::TcpListener;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpListener;
 use tokio::runtime::Runtime;
 
 /// Benchmark TCP transport throughput.
@@ -53,7 +53,8 @@ fn benchmark_throughput() {
     }
 
     let elapsed = start.elapsed();
-    let throughput_mbps = (frame.len() as f64 * iterations as f64 * 8.0) / elapsed.as_secs_f64() / 1_000_000.0;
+    let throughput_mbps =
+        (frame.len() as f64 * iterations as f64 * 8.0) / elapsed.as_secs_f64() / 1_000_000.0;
     let latency_us = elapsed.as_micros() as f64 / iterations as f64;
 
     println!("Throughput Benchmark Results:");
@@ -151,7 +152,10 @@ fn benchmark_frame_sizes() {
     client.connect().unwrap();
 
     println!("Frame Size Benchmark Results:");
-    println!("{:<15} {:<15} {:<15}", "Frame Size", "Throughput", "Latency");
+    println!(
+        "{:<15} {:<15} {:<15}",
+        "Frame Size", "Throughput", "Latency"
+    );
     println!("{:-<45}", "");
 
     for payload_size in [64, 256, 1024, 4096, 16384].iter() {
@@ -170,10 +174,16 @@ fn benchmark_frame_sizes() {
         }
 
         let elapsed = start.elapsed();
-        let throughput_mbps = (frame.len() as f64 * iterations as f64 * 8.0) / elapsed.as_secs_f64() / 1_000_000.0;
+        let throughput_mbps =
+            (frame.len() as f64 * iterations as f64 * 8.0) / elapsed.as_secs_f64() / 1_000_000.0;
         let latency_us = elapsed.as_micros() as f64 / iterations as f64;
 
-        println!("{:<15} {:<15.2} {:<15.2}", format!("{} B", frame.len()), format!("{:.2} Mbps", throughput_mbps), format!("{:.2} µs", latency_us));
+        println!(
+            "{:<15} {:<15.2} {:<15.2}",
+            format!("{} B", frame.len()),
+            format!("{:.2} Mbps", throughput_mbps),
+            format!("{:.2} µs", latency_us)
+        );
     }
 }
 

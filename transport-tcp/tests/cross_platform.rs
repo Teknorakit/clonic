@@ -1,10 +1,10 @@
 //! Cross-platform TCP transport tests for Linux, macOS, and Windows.
 
-use clonic_transport_tcp::TcpTransport;
 use clonic_transport::config::TcpConfig;
 use clonic_transport::Transport;
-use tokio::net::TcpListener;
+use clonic_transport_tcp::TcpTransport;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpListener;
 use tokio::runtime::Runtime;
 
 /// Test TCP transport on localhost (works on all platforms).

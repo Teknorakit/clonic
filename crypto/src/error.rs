@@ -17,6 +17,8 @@ pub enum Error {
     UnsupportedSuite,
     /// Buffer too small for operation
     BufferTooSmall,
+    /// No randomness source available (getrandom feature disabled)
+    NoRandomnessSource,
 }
 
 #[cfg(feature = "std")]
@@ -30,6 +32,7 @@ impl std::fmt::Display for Error {
             Error::InvalidSignature => write!(f, "invalid signature"),
             Error::UnsupportedSuite => write!(f, "unsupported crypto suite"),
             Error::BufferTooSmall => write!(f, "buffer too small"),
+            Error::NoRandomnessSource => write!(f, "no randomness source available"),
         }
     }
 }

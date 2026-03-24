@@ -75,8 +75,8 @@ impl FlowControlConfig {
     }
 }
 
-/// Flow control state and metrics.
-#[derive(Clone, Debug)]
+/// Flow control metrics for monitoring TCP transport performance.
+#[derive(Default)]
 pub struct FlowControlMetrics {
     /// Current send buffer usage in bytes.
     pub send_buffer_used: usize,
@@ -90,19 +90,6 @@ pub struct FlowControlMetrics {
     pub total_received: u64,
     /// Number of backpressure events.
     pub backpressure_events: u64,
-}
-
-impl Default for FlowControlMetrics {
-    fn default() -> Self {
-        Self {
-            send_buffer_used: 0,
-            recv_buffer_used: 0,
-            backpressure_active: false,
-            total_sent: 0,
-            total_received: 0,
-            backpressure_events: 0,
-        }
-    }
 }
 
 impl FlowControlMetrics {
@@ -233,8 +220,7 @@ mod tests {
 
     #[test]
     fn test_flow_control_config_watermarks() {
-        let cfg = FlowControlConfig::new(10000, 10000)
-            .with_watermarks(8000, 2000);
+        let cfg = FlowControlConfig::new(10000, 10000).with_watermarks(8000, 2000);
         assert_eq!(cfg.send_high_watermark, 8000);
         assert_eq!(cfg.send_low_watermark, 2000);
         assert!(cfg.validate().is_ok());
@@ -242,15 +228,13 @@ mod tests {
 
     #[test]
     fn test_flow_control_config_invalid_watermarks() {
-        let cfg = FlowControlConfig::new(10000, 10000)
-            .with_watermarks(2000, 8000);
+        let cfg = FlowControlConfig::new(10000, 10000).with_watermarks(2000, 8000);
         assert!(cfg.validate().is_err());
     }
 
     #[test]
     fn test_flow_control_config_invalid_high_watermark() {
-        let cfg = FlowControlConfig::new(10000, 10000)
-            .with_watermarks(15000, 5000);
+        let cfg = FlowControlConfig::new(10000, 10000).with_watermarks(15000, 5000);
         assert!(cfg.validate().is_err());
     }
 
@@ -288,8 +272,7 @@ mod tests {
 
     #[test]
     fn test_backpressure_handler_apply() {
-        let cfg = FlowControlConfig::new(10000, 10000)
-            .with_watermarks(8000, 2000);
+        let cfg = FlowControlConfig::new(10000, 10000).with_watermarks(8000, 2000);
         let mut handler = BackpressureHandler::new(cfg).unwrap();
 
         // Below high watermark
@@ -304,8 +287,7 @@ mod tests {
 
     #[test]
     fn test_backpressure_handler_clear() {
-        let cfg = FlowControlConfig::new(10000, 10000)
-            .with_watermarks(8000, 2000);
+        let cfg = FlowControlConfig::new(10000, 10000).with_watermarks(8000, 2000);
         let mut handler = BackpressureHandler::new(cfg).unwrap();
 
         // Apply backpressure

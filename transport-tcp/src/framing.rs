@@ -38,7 +38,7 @@ impl FrameReader {
         let frame_len = Self::peek_frame_length(&header)?;
 
         // Validate frame length
-        if frame_len < HEADER_SIZE || frame_len > HEADER_SIZE + MAX_PAYLOAD_SIZE {
+        if !(HEADER_SIZE..=HEADER_SIZE + MAX_PAYLOAD_SIZE).contains(&frame_len) {
             return Err(io::Error::new(
                 io::ErrorKind::InvalidData,
                 "invalid frame length",
@@ -65,10 +65,7 @@ impl FrameReader {
             ));
         }
 
-        let len_bytes = [
-            header[FRAME_LEN_OFFSET],
-            header[FRAME_LEN_OFFSET + 1],
-        ];
+        let len_bytes = [header[FRAME_LEN_OFFSET], header[FRAME_LEN_OFFSET + 1]];
         Ok(u16::from_be_bytes(len_bytes) as usize)
     }
 }

@@ -2,6 +2,7 @@
 //!
 //! Uses published test vectors from RFCs and NIST to validate correctness.
 
+#[cfg(feature = "alloc")]
 use clonic_crypto::{decrypt, encrypt};
 use hkdf::Hkdf;
 use sha3::Sha3_256;
@@ -107,6 +108,7 @@ fn aes_256_gcm_nist_sp800_38d_vector() {
     assert_eq!(ciphertext, expected_ct);
 }
 
+#[cfg(feature = "alloc")]
 #[test]
 fn aes_256_gcm_with_hkdf_roundtrip() {
     // Test our encrypt/decrypt with HKDF-derived key

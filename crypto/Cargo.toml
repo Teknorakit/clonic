@@ -12,12 +12,14 @@ categories = ["cryptography", "no-std"]
 
 [features]
 default = []
-std = ["alloc"]
+std = ["alloc", "getrandom"]
 alloc = []
+getrandom = ["dep:getrandom", "rand_core/getrandom"]
 serde = ["dep:serde", "alloc"]
 
 [dependencies]
-pqcrypto = { version = "0.2", default-features = false }
+# TODO: Add no_std compatible post-quantum crypto library
+# pqc-combo = { version = "0.1", default-features = false }
 x25519-dalek = { version = "2", default-features = false, features = ["static_secrets"] }
 ed25519-dalek = { version = "2", default-features = false, features = ["hazmat"] }
 aes-gcm = { version = "0.10", default-features = false, features = ["aes", "alloc"] }
@@ -25,8 +27,9 @@ hkdf = { version = "0.12", default-features = false }
 sha3 = { version = "0.10", default-features = false }
 serde = { version = "1", default-features = false, features = ["derive", "alloc"], optional = true }
 zeroize = { version = "1", default-features = false, features = ["alloc", "zeroize_derive"] }
-getrandom = { version = "0.2", default-features = false, features = ["js"] }
-rand_core = { version = "0.6", default-features = false, features = ["getrandom"] }
+# getrandom is not available on all no_std targets
+getrandom = { version = "0.2", default-features = false, features = ["js"], optional = true }
+rand_core = { version = "0.6", default-features = false }
 
 [dev-dependencies]
 hex = "0.4"

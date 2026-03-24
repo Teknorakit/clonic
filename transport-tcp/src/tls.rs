@@ -55,8 +55,8 @@ impl TlsConnectorWrapper {
         // Add custom root certificates if provided
         if let Some(cert_pem) = &tls_cfg.root_certs {
             let mut cursor = std::io::Cursor::new(cert_pem);
-            let certs: Vec<_> = rustls_pemfile::certs(&mut cursor)
-                .collect::<Result<Vec<_>, _>>()?;
+            let certs: Vec<_> =
+                rustls_pemfile::certs(&mut cursor).collect::<Result<Vec<_>, _>>()?;
             for cert in certs {
                 root_store.add(cert)?;
             }

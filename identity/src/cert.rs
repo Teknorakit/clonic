@@ -3,7 +3,7 @@
 //! Layout is intentionally compact and deterministic for signing:
 //! - subject_role: u8 (0=root,1=server,2=device)
 //! - issuer_role: u8
-//! - subject_public_key: [u8;32] (Ed25519)
+//! - subject_public_key: \[u8;32\] (Ed25519)
 //! - not_before: u64 (unix seconds, LE)
 //! - not_after: u64  (unix seconds, LE)
 //! - max_depth: u8   (delegation depth allowed)

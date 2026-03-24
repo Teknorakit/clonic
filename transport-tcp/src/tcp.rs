@@ -73,7 +73,7 @@ impl Transport for TcpTransport {
                         "frame too short",
                     ));
                 }
-                
+
                 let declared_len = u16::from_be_bytes([frame[0], frame[1]]) as usize;
                 if declared_len != frame.len() {
                     return Err(std::io::Error::new(
@@ -81,7 +81,7 @@ impl Transport for TcpTransport {
                         "frame length mismatch",
                     ));
                 }
-                
+
                 // Write to TCP stream
                 stream.write_all(frame).await?;
                 stream.flush().await
@@ -96,12 +96,12 @@ impl Transport for TcpTransport {
                 // Use two-phase framing for recv
                 let mut frame_buf = Vec::new();
                 let mut reader = tokio::io::BufReader::new(stream);
-                
+
                 // Read frame using two-phase protocol
                 let frame_len = {
                     let mut header = [0u8; 42];
                     reader.read_exact(&mut header).await?;
-                    
+
                     // Peek frame length from header
                     let len = u16::from_be_bytes([header[0], header[1]]) as usize;
                     if len < 42 {
@@ -110,17 +110,17 @@ impl Transport for TcpTransport {
                             "invalid frame length",
                         ));
                     }
-                    
+
                     frame_buf.extend_from_slice(&header);
                     len
                 };
-                
+
                 // Read remainder
                 let remainder_len = frame_len - 42;
                 let mut remainder = vec![0u8; remainder_len];
                 reader.read_exact(&mut remainder).await?;
                 frame_buf.extend_from_slice(&remainder);
-                
+
                 // Copy to caller's buffer
                 let copy_len = std::cmp::min(buf.len(), frame_buf.len());
                 buf[..copy_len].copy_from_slice(&frame_buf[..copy_len]);
