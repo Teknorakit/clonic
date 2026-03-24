@@ -69,16 +69,14 @@ jobs:
             sudo apt-get install -y gcc-aarch64-linux-gnu
           elif [ "${{ matrix.target }}" = "x86_64-unknown-linux-musl" ]; then
             sudo apt-get install -y musl-tools musl-dev
-            # Install musl-gcc wrapper for ring crate
-            wget https://musl.cc/x86_64-linux-musl-cross.tgz
-            tar -xzf x86_64-linux-musl-cross.tgz
-            sudo cp -r x86_64-linux-musl-cross/* /usr/local/
-            rm -rf x86_64-linux-musl-cross*
           fi
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
       - name: "Build (all features)"
+        env:
+          CC_x86_64_unknown_linux_musl: musl-gcc
+          RUSTFLAGS: "-C target-feature=+crt-static"
         run: cargo build --target ${{ matrix.target }} --all-features
 
   # ── Proptest (longer runs on CI) ────────────────────────────────
