@@ -8,6 +8,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: -Dwarnings
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   # ── no_std compilation (the critical check) ─────────────────────
@@ -61,6 +62,10 @@ jobs:
           - aarch64-unknown-linux-musl   # Raspberry Pi, Orange Pi
     steps:
       - uses: actions/checkout@v4
+      - name: Install cross-compilation tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-musl gcc-x86_64-linux-musl
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}
