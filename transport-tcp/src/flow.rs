@@ -68,6 +68,12 @@ impl FlowControlConfig {
         if self.send_high_watermark > self.send_buffer_size {
             return Err("high watermark must not exceed send buffer size".to_string());
         }
+        if self.send_buffer_size == 0 {
+            return Err("send buffer size must be greater than 0".to_string());
+        }
+        if self.recv_buffer_size == 0 {
+            return Err("receive buffer size must be greater than 0".to_string());
+        }
         if self.max_frame_size == 0 {
             return Err("max frame size must be greater than 0".to_string());
         }
@@ -131,11 +137,17 @@ impl FlowControlMetrics {
 
     /// Get send buffer utilization percentage.
     pub fn send_utilization(&self, config: &FlowControlConfig) -> f64 {
+        if config.send_buffer_size == 0 {
+            return 0.0;
+        }
         (self.send_buffer_used as f64 / config.send_buffer_size as f64) * 100.0
     }
 
     /// Get receive buffer utilization percentage.
     pub fn recv_utilization(&self, config: &FlowControlConfig) -> f64 {
+        if config.recv_buffer_size == 0 {
+            return 0.0;
+        }
         (self.recv_buffer_used as f64 / config.recv_buffer_size as f64) * 100.0
     }
 }
@@ -239,6 +251,18 @@ mod tests {
     }
 
     #[test]
+    fn test_flow_control_config_zero_send_buffer() {
+        let cfg = FlowControlConfig::new(0, 10000);
+        assert!(cfg.validate().is_err());
+    }
+
+    #[test]
+    fn test_flow_control_config_zero_recv_buffer() {
+        let cfg = FlowControlConfig::new(10000, 0);
+        assert!(cfg.validate().is_err());
+    }
+
+    #[test]
     fn test_flow_control_metrics_default() {
         let metrics = FlowControlMetrics::new();
         assert_eq!(metrics.send_buffer_used, 0);
@@ -261,6 +285,15 @@ mod tests {
         let mut metrics = FlowControlMetrics::new();
         metrics.update_send_buffer(5000);
         assert_eq!(metrics.send_utilization(&cfg), 50.0);
+    }
+
+    #[test]
+    fn test_flow_control_metrics_zero_buffer_utilization() {
+        let cfg = FlowControlConfig::new(0, 0);
+        let mut metrics = FlowControlMetrics::new();
+        metrics.update_send_buffer(1000);
+        assert_eq!(metrics.send_utilization(&cfg), 0.0);
+        assert_eq!(metrics.recv_utilization(&cfg), 0.0);
     }
 
     #[test]

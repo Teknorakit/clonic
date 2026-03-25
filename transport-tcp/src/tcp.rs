@@ -67,10 +67,10 @@ impl Transport for TcpTransport {
         self.rt
             .block_on(async {
                 // Validate frame using two-phase framing protocol
-                if frame.len() < 42 {
+                if frame.len() < 42 || frame.len() > 65535 {
                     return Err(std::io::Error::new(
                         std::io::ErrorKind::InvalidInput,
-                        "frame too short",
+                        "frame size out of bounds",
                     ));
                 }
 
@@ -95,16 +95,15 @@ impl Transport for TcpTransport {
             .block_on(async {
                 // Use two-phase framing for recv
                 let mut frame_buf = Vec::new();
-                let mut reader = tokio::io::BufReader::new(stream);
 
                 // Read frame using two-phase protocol
                 let frame_len = {
                     let mut header = [0u8; 42];
-                    reader.read_exact(&mut header).await?;
+                    stream.read_exact(&mut header).await?;
 
                     // Peek frame length from header
                     let len = u16::from_be_bytes([header[0], header[1]]) as usize;
-                    if len < 42 {
+                    if len < 42 || len > 65535 {
                         return Err(std::io::Error::new(
                             std::io::ErrorKind::InvalidData,
                             "invalid frame length",
@@ -118,7 +117,7 @@ impl Transport for TcpTransport {
                 // Read remainder
                 let remainder_len = frame_len - 42;
                 let mut remainder = vec![0u8; remainder_len];
-                reader.read_exact(&mut remainder).await?;
+                stream.read_exact(&mut remainder).await?;
                 frame_buf.extend_from_slice(&remainder);
 
                 // Copy to caller's buffer
@@ -169,5 +168,36 @@ mod tests {
         let mut buf = [0u8; 256];
         let n = client.recv(&mut buf).unwrap();
         assert_eq!(&buf[..n], &frame[..]);
+    }
+
+    #[test]
+    fn tcp_transport_frame_size_validation() {
+        let cfg = TcpConfig {
+            host: "127.0.0.1".into(),
+            port: 40125,
+        };
+
+        let rt = Runtime::new().unwrap();
+        let listener = rt.block_on(TcpListener::bind("127.0.0.1:40125")).unwrap();
+
+        rt.spawn(async move {
+            let (mut socket, _) = listener.accept().await.unwrap();
+            let mut buf = vec![0u8; 1024];
+            let n = socket.read(&mut buf).await.unwrap();
+            socket.write_all(&buf[..n]).await.unwrap();
+        });
+
+        let mut client = TcpTransport::new(cfg);
+        client.connect().unwrap();
+
+        // Test frame too short (less than 42 bytes)
+        let short_frame = vec![0u8; 10];
+        assert!(client.send(&short_frame).is_err());
+
+        // Test frame too long (more than 65535 bytes)
+        let mut long_frame = vec![0u8; 70000];
+        long_frame[0] = (70000 >> 8) as u8;
+        long_frame[1] = (70000 & 0xFF) as u8;
+        assert!(client.send(&long_frame).is_err());
     }
 }
