@@ -7,7 +7,7 @@ This directory contains comprehensive documentation for the Zone Coordination Pr
 ### Protocol & Architecture
 - **[ZCP_PROTOCOL_SPEC.md](./ZCP_PROTOCOL_SPEC.md)** - Complete RFC-style protocol specification
   - Wire format definition
-  - Message types and ranges  
+  - Message types and ranges
   - Cryptographic suites
   - Zone enforcement mechanisms
   - Security considerations

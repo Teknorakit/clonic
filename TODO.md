@@ -138,6 +138,13 @@ Checklist for the `clonic` monorepo — the ZCP wire protocol, cryptography, ide
 ### Stubbed
 - [x] `TcpTransport` — currently an empty struct with no functionality
 
+### Future Work (Code Review Items)
+- [ ] Integrate TLS module into TcpTransport (TLS wrapper exists but not connected)
+- [ ] Integrate flow control module into TcpTransport (BackpressureHandler exists but not used)
+- [ ] Implement connection pooling in TcpTransport (PoolConfig exists but not implemented)
+- [ ] Improve error mapping for better error type granularity
+- [ ] Fix test port conflicts for parallel test execution
+
 ---
 
 ## `clonic-router` — Zone Enforcement Routing (not yet created)

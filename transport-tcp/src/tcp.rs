@@ -67,7 +67,7 @@ impl Transport for TcpTransport {
         self.rt
             .block_on(async {
                 // Validate frame using two-phase framing protocol
-                if frame.len() < 42 || frame.len() > 65535 {
+                if !(42..=65535).contains(&frame.len()) {
                     return Err(std::io::Error::new(
                         std::io::ErrorKind::InvalidInput,
                         "frame size out of bounds",
@@ -103,7 +103,7 @@ impl Transport for TcpTransport {
 
                     // Peek frame length from header
                     let len = u16::from_be_bytes([header[0], header[1]]) as usize;
-                    if len < 42 || len > 65535 {
+                    if !(42..=65535).contains(&len) {
                         return Err(std::io::Error::new(
                             std::io::ErrorKind::InvalidData,
                             "invalid frame length",
