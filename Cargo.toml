@@ -4,7 +4,8 @@ members = [
     "crypto",
     "identity",
     "transport",
-    "transport-tcp"
+    "transport-tcp",
+    "router"
 ]
 resolver = "2"
 

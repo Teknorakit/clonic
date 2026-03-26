@@ -1,0 +1,31 @@
+[package]
+name = "clonic-router"
+version = "0.1.2"
+edition = "2021"
+rust-version = "1.85"
+license = "MIT"
+repository = "https://github.com/Teknorakit/clonic"
+description = "Zone enforcement routing for the Zone Coordination Protocol (ZCP)"
+authors = ["Teknorakit"]
+
+[dependencies]
+clonic-core = { path = "../core", version = "0.1.2" }
+clonic-transport = { path = "../transport", version = "0.1.2" }
+serde = { version = "1.0", optional = true, features = ["derive"] }
+toml = { version = "0.8", optional = true }
+thiserror = "1.0"
+tracing = "0.1"
+indexmap = { version = "2.0", features = ["serde"] }
+prometheus = { version = "0.13", optional = true }
+hex = "0.4"
+
+[features]
+default = ["std"]
+std = ["clonic-core/std", "clonic-transport/std"]
+alloc = ["clonic-core/alloc", "clonic-transport/alloc"]
+serde = ["dep:serde", "clonic-core/serde", "clonic-transport/serde", "indexmap/serde"]
+config = ["dep:toml", "serde"]
+metrics = ["dep:prometheus"]
+
+[dev-dependencies]
+tokio-test = "0.4"

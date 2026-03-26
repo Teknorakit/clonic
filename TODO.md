@@ -147,17 +147,20 @@ Checklist for the `clonic` monorepo — the ZCP wire protocol, cryptography, ide
 
 ---
 
-## `clonic-router` — Zone Enforcement Routing (not yet created)
+## `clonic-router` — Zone Enforcement Routing (v0.1.2)
 
 > This crate belongs in clonic — it's the enforcement layer for the residency tag that clonic defines.
 
-- [ ] Create `clonic-router` crate
-- [ ] Peer registry (device_id → zone mapping)
-- [ ] Zone validation per hop (extract tag, check destination, enforce)
-- [ ] Routing policy engine (allowlists, denylists, cross-border agreements)
-- [ ] Zone-aware routing table and path selection
-- [ ] Violation logging and sender notification
-- [ ] Zone configuration format (TOML)
+### Complete ✅
+- [x] Create `clonic-router` crate
+- [x] Peer registry (device_id → zone mapping)
+- [x] Zone validation per hop (extract tag, check destination, enforce)
+- [x] Routing policy engine (allowlists, denylists, cross-border agreements)
+- [x] Zone-aware routing table and path selection
+- [x] Violation logging and sender notification
+- [x] Zone configuration format (TOML)
+
+### In Progress 🔄
 - [ ] ISO 3166-1 zone registry with sub-national support (extension bit)
 - [ ] Prometheus metrics for zone violations
 - [ ] Zone policy CLI tool
