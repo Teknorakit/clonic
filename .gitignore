@@ -6,3 +6,6 @@ Cargo.lock
 .idea/
 .vscode/
 .windsurf/
+.skill/
+.cursor/rules/skill-context.md
+.windsurf/rules/skill-context.md

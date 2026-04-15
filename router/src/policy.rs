@@ -53,6 +53,29 @@ pub enum DecisionReason {
     PolicyError(String),
 }
 
+impl DecisionReason {
+    /// Returns a stable string code for metric labeling.
+    ///
+    /// Unlike `Debug`, this provides consistent, stable identifiers
+    /// that won't change if enum variant names are refactored.
+    pub fn as_code(&self) -> &'static str {
+        match self {
+            DecisionReason::SameZone => "same_zone",
+            DecisionReason::GlobalData => "global_data",
+            DecisionReason::Allowlisted => "allowlisted",
+            DecisionReason::Denylisted => "denylisted",
+            DecisionReason::CrossBorderAgreement => "cross_border_agreement",
+            DecisionReason::NoAgreement => "no_agreement",
+            DecisionReason::DefaultAllow => "default_allow",
+            DecisionReason::DefaultDeny => "default_deny",
+            DecisionReason::ExpiredAgreement => "expired_agreement",
+            DecisionReason::UnknownDestination => "unknown_destination",
+            DecisionReason::UnknownSource => "unknown_source",
+            DecisionReason::PolicyError(_) => "policy_error",
+        }
+    }
+}
+
 /// Cross-border agreement between zones.
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]

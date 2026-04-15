@@ -16,9 +16,11 @@ default = []
 std = ["alloc"]
 alloc = []
 serde = ["dep:serde", "alloc"]
+zone-registry = ["dep:once_cell", "alloc"]
 
 [dependencies]
 serde = { version = "1", default-features = false, features = ["derive", "alloc"], optional = true }
+once_cell = { version = "1", default-features = false, features = ["race", "alloc"], optional = true }
 
 [dev-dependencies]
 proptest = "1"

@@ -48,6 +48,7 @@ extern crate alloc;
 extern crate std;
 
 pub mod config;
+pub mod metrics;
 pub mod policy;
 pub mod registry;
 pub mod router;
@@ -56,6 +57,8 @@ pub mod violation;
 // Re-export primary types for ergonomics
 #[cfg(feature = "alloc")]
 pub use config::{RouterConfig, ZoneConfig};
+#[cfg(feature = "alloc")]
+pub use metrics::ZoneMetrics;
 #[cfg(feature = "alloc")]
 pub use policy::{PolicyEngine, RoutingDecision};
 #[cfg(feature = "alloc")]

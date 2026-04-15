@@ -1,0 +1,31 @@
+[package]
+name = "clonic-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Command-line interface for Zone Coordination Protocol (ZCP) management"
+repository.workspace = true
+
+[[bin]]
+name = "clonic"
+path = "src/main.rs"
+
+[dependencies]
+clonic-core = { path = "../core", version = "0.1.2", features = ["std", "alloc"] }
+clonic-router = { path = "../router", version = "0.1.2", features = ["std", "alloc", "config", "metrics"] }
+clonic-transport = { path = "../transport", version = "0.1.2", features = ["std"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+clap = { version = "4.0", features = ["derive"] }
+tokio = { version = "1.0", features = ["full"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+anyhow = "1.0"
+tabled = "0.15"
+colored = "2.0"
+
+[features]
+default = ["std"]
+std = []

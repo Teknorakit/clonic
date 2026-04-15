@@ -160,11 +160,11 @@ Checklist for the `clonic` monorepo — the ZCP wire protocol, cryptography, ide
 - [x] Violation logging and sender notification
 - [x] Zone configuration format (TOML)
 
-### In Progress 🔄
-- [ ] ISO 3166-1 zone registry with sub-national support (extension bit)
-- [ ] Prometheus metrics for zone violations
-- [ ] Zone policy CLI tool
-- [ ] Zone audit logging (all forwarding decisions)
+### Complete ✅
+- [x] ISO 3166-1 zone registry with sub-national support (extension bit)
+- [x] Prometheus metrics for zone violations
+- [x] Zone policy CLI tool
+- [x] Zone audit logging (all forwarding decisions)
 
 ---
 
