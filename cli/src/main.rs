@@ -190,7 +190,7 @@ pub enum AuditCommands {
     /// List recent violations
     List {
         /// Number of recent violations to show
-        #[arg(short, long, default_value = "10")]
+        #[arg(short = 'n', long, default_value = "10")]
         count: usize,
         /// Filter by violation type
         #[arg(short, long)]
@@ -450,6 +450,30 @@ fn list_zones(country_filter: Option<String>, regulated_only: bool) -> Result<Ve
             regulations: "PDPA 2010".to_string(),
         },
         ZoneInfo {
+            code: "702".to_string(),
+            name: "Singapore".to_string(),
+            alpha2: "SG".to_string(),
+            alpha3: "SGP".to_string(),
+            regulated: "Yes".to_string(),
+            regulations: "PDPA 2012".to_string(),
+        },
+        ZoneInfo {
+            code: "608".to_string(),
+            name: "Philippines".to_string(),
+            alpha2: "PH".to_string(),
+            alpha3: "PHL".to_string(),
+            regulated: "Yes".to_string(),
+            regulations: "DPA 2012".to_string(),
+        },
+        ZoneInfo {
+            code: "704".to_string(),
+            name: "Vietnam".to_string(),
+            alpha2: "VN".to_string(),
+            alpha3: "VNM".to_string(),
+            regulated: "Yes".to_string(),
+            regulations: "Decree 13/2023".to_string(),
+        },
+        ZoneInfo {
             code: "840".to_string(),
             name: "United States".to_string(),
             alpha2: "US".to_string(),
@@ -696,9 +720,9 @@ mod tests {
             .unwrap();
 
         // The example config should contain key sections
-        assert!(config_content.contains("[router]"));
-        assert!(config_content.contains("[policy]"));
-        assert!(config_content.contains("[zones]"));
+        assert!(config_content.contains("[local_zone]"));
+        assert!(config_content.contains("[peer_registry]"));
+        assert!(config_content.contains("[policy_engine]"));
 
         // Clean up
         std::fs::remove_file(&config_path).unwrap_or(());
@@ -928,7 +952,7 @@ mod tests {
 
         let commands = vec![
             vec!["clonic", "audit", "list"],
-            vec!["clonic", "audit", "report", "json"],
+            vec!["clonic", "audit", "report", "--format", "json"],
             vec!["clonic", "audit", "check"],
         ];
 

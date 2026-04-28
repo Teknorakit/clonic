@@ -3,6 +3,8 @@
 //! Coordinates peer registry, policy engine, and transport layer
 //! to provide zone-aware routing with residency tag enforcement.
 
+#[cfg(all(feature = "alloc", test))]
+use crate::policy::{DefaultAction, ZonePolicy};
 #[cfg(feature = "alloc")]
 use crate::{
     metrics::ZoneMetrics,
@@ -852,5 +854,127 @@ mod tests {
         }
 
         // If we reach here, metrics access worked without panics
+    }
+
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn test_zone_enforcement_bypass_unknown_sender() {
+        let mut router = Router::new(ResidencyTag::INDONESIA, [1u8; 32]);
+
+        // Do NOT register the peer — attempt to validate with unknown sender
+        let result = router.validate_residency(ResidencyTag::INDONESIA, [99u8; 32]);
+        assert!(
+            matches!(result, Err(RouterError::UnknownSender)),
+            "Unknown sender should be rejected immediately"
+        );
+
+        let violations = router.get_violations();
+        assert!(
+            violations.is_empty(),
+            "No violation logged for unknown sender — just rejection"
+        );
+    }
+
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn test_zone_enforcement_bypass_global_sender_to_restricted() {
+        let mut router = Router::new(ResidencyTag::INDONESIA, [1u8; 32]);
+
+        // Register peer in GLOBAL zone
+        router
+            .register_peer_by_device_id([7u8; 32], ResidencyTag::GLOBAL)
+            .expect("Failed to register peer");
+
+        // Global sender trying to send to Indonesia (should be allowed — global data can go anywhere)
+        let result = router.validate_residency(ResidencyTag::INDONESIA, [7u8; 32]);
+        assert!(
+            result.is_ok(),
+            "Global sender should be allowed to send to any zone per policy"
+        );
+    }
+
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn test_zone_enforcement_bypass_cross_border_without_agreement() {
+        let mut router = Router::new(ResidencyTag::INDONESIA, [1u8; 32]);
+
+        // Register peer in Malaysia (no cross-border agreement configured by default)
+        router
+            .register_peer_by_device_id([8u8; 32], ResidencyTag::MALAYSIA)
+            .expect("Failed to register peer");
+
+        // Malaysia sender trying to send data tagged for Indonesia — should deny
+        let result = router.validate_residency(ResidencyTag::INDONESIA, [8u8; 32]);
+        assert!(
+            result.is_err(),
+            "Cross-border without agreement should be denied"
+        );
+
+        // Verify violation was logged
+        let violations = router.get_violations();
+        assert!(!violations.is_empty());
+        assert_eq!(
+            violations[0].violation_type,
+            ViolationType::ResidencyViolation
+        );
+    }
+
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn test_zone_enforcement_bypass_denylisted_zone() {
+        let mut router = Router::new(ResidencyTag::INDONESIA, [1u8; 32]);
+
+        // Configure a policy that explicitly denies Vietnam
+        let mut policy = ZonePolicy {
+            zone: ResidencyTag::INDONESIA,
+            allowlist: alloc::collections::BTreeSet::new(),
+            denylist: alloc::collections::BTreeSet::new(),
+            agreements: alloc::vec::Vec::new(),
+            default_action: DefaultAction::Allow,
+            log_decisions: true,
+        };
+        policy.denylist.insert(ResidencyTag::VIETNAM.raw());
+        router.policy_engine.add_zone_policy(policy);
+
+        // Register peer in Indonesia
+        router
+            .register_peer_by_device_id([9u8; 32], ResidencyTag::INDONESIA)
+            .expect("Failed to register peer");
+
+        // Indonesia sender trying to send data tagged for Vietnam (denylisted)
+        let result = router.validate_residency(ResidencyTag::VIETNAM, [9u8; 32]);
+        assert!(result.is_err(), "Denylisted destination should be rejected");
+
+        // Verify violation was logged
+        let violations = router.get_violations();
+        assert!(!violations.is_empty());
+        assert_eq!(
+            violations[0].violation_type,
+            ViolationType::ResidencyViolation
+        );
+    }
+
+    #[cfg(feature = "alloc")]
+    #[test]
+    fn test_zone_enforcement_bypass_different_sender_zone_in_envelope() {
+        let mut router = Router::new(ResidencyTag::INDONESIA, [1u8; 32]);
+
+        // Register peer as Indonesia
+        router
+            .register_peer_by_device_id([10u8; 32], ResidencyTag::INDONESIA)
+            .expect("Failed to register peer");
+
+        // The router checks the peer_registry for the sender's zone, NOT the envelope.
+        // So even if someone crafts an envelope with a different residency tag,
+        // the router will use the registered zone.
+        let result = router.validate_residency(ResidencyTag::MALAYSIA, [10u8; 32]);
+
+        // Since the sender is registered as Indonesia, sending to Malaysia is cross-border
+        // without agreement — should be denied. This tests that zone enforcement
+        // relies on the registry, not on attacker-controlled envelope fields.
+        assert!(
+            result.is_err(),
+            "Registered zone takes precedence — envelope cannot bypass"
+        );
     }
 }

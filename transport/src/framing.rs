@@ -32,10 +32,6 @@ impl TransportFraming {
     /// # Returns
     /// (payload_length, total_frame_size)
     pub fn peek_frame_length(header: &[u8; constants::HEADER_SIZE]) -> Result<(u32, usize), Error> {
-        if header.len() < 42 {
-            return Err(Error::InvalidFrame);
-        }
-
         // Payload length at offset 38-41, big-endian
         let payload_length = u32::from_be_bytes([header[38], header[39], header[40], header[41]]);
 
@@ -93,5 +89,47 @@ mod tests {
     #[test]
     fn validate_frame_size_invalid() {
         assert!(TransportFraming::validate_frame_size(10).is_err());
+    }
+
+    #[test]
+    fn peek_frame_length_max_u32_payload() {
+        let mut header = [0u8; 42];
+        // u32::MAX payload = 0xFFFFFFFF
+        header[38] = 0xFF;
+        header[39] = 0xFF;
+        header[40] = 0xFF;
+        header[41] = 0xFF;
+
+        let (payload_len, total) = TransportFraming::peek_frame_length(&header).unwrap();
+        assert_eq!(payload_len, u32::MAX);
+        assert_eq!(total, 42 + (u32::MAX as usize) + 16);
+    }
+
+    #[test]
+    fn peek_frame_length_large_payload_boundary() {
+        let mut header = [0u8; 42];
+        // 65_535 payload = 0x0000FFFF
+        header[38] = 0x00;
+        header[39] = 0x00;
+        header[40] = 0xFF;
+        header[41] = 0xFF;
+
+        let (payload_len, total) = TransportFraming::peek_frame_length(&header).unwrap();
+        assert_eq!(payload_len, 65_535);
+        assert_eq!(total, 42 + 65_535 + 16);
+    }
+
+    #[test]
+    fn validate_frame_size_boundary_exact() {
+        assert!(TransportFraming::validate_frame_size(constants::MIN_FRAME_SIZE).is_ok());
+        assert!(TransportFraming::validate_frame_size(constants::MIN_FRAME_SIZE - 1).is_err());
+    }
+
+    #[test]
+    fn peek_frame_length_header_all_zeros() {
+        let header = [0u8; 42];
+        let (payload_len, total) = TransportFraming::peek_frame_length(&header).unwrap();
+        assert_eq!(payload_len, 0);
+        assert_eq!(total, constants::MIN_FRAME_SIZE);
     }
 }

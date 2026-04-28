@@ -562,4 +562,96 @@ mod tests {
         // 38 + 4 = 42 = HEADER_SIZE
         assert_eq!(OFF_PAYLOAD_LEN + 4, HEADER_SIZE);
     }
+
+    // ── MAC integrity & tamper detection structure tests ─
+
+    #[test]
+    fn mac_accessor_returns_correct_bytes() {
+        let mut buf = [0u8; 58];
+        buf[0] = 0x01; // version
+        buf[1] = 0x01; // msg_type
+        buf[2] = 0x01; // crypto_suite
+                       // MAC region: last 16 bytes, fill with distinctive pattern
+        for (i, val) in (0xA0..=0xAF).enumerate() {
+            buf[42 + i] = val;
+        }
+
+        let env = EnvelopeRef::parse(&buf).unwrap();
+        let mac = env.mac();
+        assert_eq!(mac.len(), 16);
+        for (i, expected) in (0xA0..=0xAF).enumerate() {
+            assert_eq!(mac[i], expected, "MAC byte {} mismatched", i);
+        }
+    }
+
+    #[test]
+    fn parse_survives_byte_corruption_in_mac_region() {
+        // Build a valid minimal envelope
+        let mut buf = [0u8; 58];
+        buf[0] = 0x01; // version
+        buf[1] = 0x01; // msg_type
+        buf[2] = 0x01; // crypto_suite
+
+        // Corrupt each byte in the MAC region (XOR with 0xFF)
+        for byte_idx in 0..16 {
+            let mut corrupted = buf;
+            corrupted[42 + byte_idx] ^= 0xFF;
+            // Parsing should still succeed — MAC verification is the crypto layer's job
+            let env = EnvelopeRef::parse(&corrupted);
+            assert!(
+                env.is_ok(),
+                "Parse failed after corrupting MAC byte {}",
+                byte_idx
+            );
+        }
+    }
+
+    #[test]
+    fn parse_survives_single_bit_flip_in_header() {
+        // Build a valid minimal envelope
+        let mut buf = [0u8; 58];
+        buf[0] = 0x01; // version
+        buf[1] = 0x01; // msg_type
+        buf[2] = 0x01; // crypto_suite
+
+        // Flip each bit in the header region, skipping:
+        // - version (0): must remain a known version
+        // - crypto_suite (2): must remain a known suite
+        // - payload_length (38..42): must remain 0 to match 58-byte buffer
+        for offset in 1..42 {
+            if offset == 2 || (38..42).contains(&offset) {
+                continue;
+            }
+            let mut corrupted = buf;
+            corrupted[offset] ^= 0xFF;
+            // Parsing should still succeed — structural validation is lenient
+            let env = EnvelopeRef::parse(&corrupted);
+            assert!(
+                env.is_ok(),
+                "Parse failed after flipping header byte {}",
+                offset
+            );
+        }
+    }
+
+    #[test]
+    fn parse_rejects_mac_too_short() {
+        // 42-byte header + 5-byte payload + 15-byte truncated MAC = 62 bytes
+        let mut buf = [0u8; 62];
+        buf[0] = 0x01; // version
+        buf[1] = 0x01; // msg_type
+        buf[2] = 0x01; // crypto_suite
+                       // payload_length at offset 38-41 = 5 (big-endian)
+        buf[42 - 4] = 0;
+        buf[42 - 3] = 0;
+        buf[42 - 2] = 0;
+        buf[42 - 1] = 5;
+
+        // Should fail because we said payload=5 but only provided 15 bytes after header
+        // (5 payload + 15 truncated MAC = 20, but we need 5 + 16 = 21)
+        assert!(matches!(
+            EnvelopeRef::parse(&buf),
+            Err(Error::BufferTooShort { .. })
+        ));
+    }
 }

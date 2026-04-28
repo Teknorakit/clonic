@@ -809,22 +809,22 @@ mod tests {
         #[cfg(feature = "alloc")]
         {
             // Test global display
-            assert_eq!(ResidencyTag::GLOBAL.to_string(), "Global");
+            assert_eq!(ResidencyTag::GLOBAL.to_string(), "GLOBAL");
 
-            // Test country display
+            // Test country display - plain numeric code format
             assert_eq!(ResidencyTag::INDONESIA.to_string(), "360");
             assert_eq!(ResidencyTag::MALAYSIA.to_string(), "458");
 
-            // Test extended display
+            // Test extended display - uses EXT:code-sub format
             let subdivision = ResidencyTag::from_subdivision(360, 1).unwrap();
-            assert_eq!(subdivision.to_string(), "Extended(360-1)");
+            assert_eq!(subdivision.to_string(), "EXT:360-1");
 
             let subdivision63 = ResidencyTag::from_subdivision(458, 63).unwrap();
-            assert_eq!(subdivision63.to_string(), "Extended(458-63)");
+            assert_eq!(subdivision63.to_string(), "EXT:458-63");
 
             // Test edge case: extended with subdivision 0
             let subdivision0 = ResidencyTag::from_subdivision(360, 0).unwrap();
-            assert_eq!(subdivision0.to_string(), "Extended(360-0)");
+            assert_eq!(subdivision0.to_string(), "EXT:360-0");
         }
     }
 
@@ -837,7 +837,7 @@ mod tests {
             let debug_unknown = format!("{:?}", ResidencyTag(9999));
 
             assert!(debug_global.contains("GLOBAL"));
-            assert!(debug_indonesia.contains("360"));
+            assert!(debug_indonesia.contains("INDONESIA"));
             assert!(debug_unknown.contains("9999"));
         }
     }

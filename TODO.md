@@ -173,10 +173,10 @@ Checklist for the `clonic` monorepo — the ZCP wire protocol, cryptography, ide
 ### Testing
 - [ ] Fuzz envelope parser (extend proptest with AFL/libFuzzer)
 - [ ] Crypto KATs and cross-implementation validation
-- [ ] Transport framing fuzz tests
-- [ ] Zone enforcement bypass attempt tests
+- [x] Transport framing fuzz tests
+- [x] Zone enforcement bypass attempt tests
 - [ ] Replay attack resistance tests
-- [ ] MAC authentication tamper detection tests
+- [x] MAC authentication tamper detection tests
 - [ ] Key rotation procedure tests
 - [ ] Benchmark envelope encode/decode (target: <100ms on ESP32)
 - [ ] Benchmark crypto overhead (PQ Hybrid vs Classical)

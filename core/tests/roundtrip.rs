@@ -305,10 +305,11 @@ mod tests {
 
     #[test]
     fn residency_extension_bit() {
-        // Manually set extension bit
-        let tag = ResidencyTag::from_be_bytes(0x8168u16.to_be_bytes());
+        // Test using proper subdivision encoding
+        let tag = ResidencyTag::from_subdivision(360, 1).unwrap();
         assert!(tag.is_extended());
         assert_eq!(tag.country_code(), 360); // Indonesia
+        assert_eq!(tag.subdivision_id(), Some(1));
     }
 
     #[test]
